@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
+import { de } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
     e.preventDefault();
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
+      // Format date as YYYY-MM-DD for backend storage
       onAddReading(meterId, numValue, format(date, "yyyy-MM-dd"));
       setValue("");
       setOpen(false);
@@ -40,6 +42,9 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Reading</DialogTitle>
+          <DialogDescription>
+            Enter the meter reading value and select a date.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -64,7 +69,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                     !date && "text-muted-foreground"
                   )}
                 >
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {date ? format(date, "dd.MM.yyyy", { locale: de }) : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -73,6 +78,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                   selected={date}
                   onSelect={(date) => date && setDate(date)}
                   initialFocus
+                  locale={de}
                 />
               </PopoverContent>
             </Popover>

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { AddReadingDialog } from "./AddReadingDialog";
+import { format, parse } from "date-fns";
+import { de } from "date-fns/locale";
 
 interface Reading {
   date: string;
@@ -41,9 +43,13 @@ export const MeterCard = ({
   }, 0);
 
   const consumptionData = readings.map((reading, idx) => ({
-    date: reading.date,
+    date: format(parse(reading.date, "yyyy-MM-dd", new Date()), "dd.MM.yyyy", { locale: de }),
     consumption: idx === 0 ? 0 : reading.value - readings[idx - 1].value,
   }));
+
+  const formatDate = (date: string) => {
+    return format(parse(date, "yyyy-MM-dd", new Date()), "dd.MM.yyyy", { locale: de });
+  };
 
   return (
     <Card className="meter-card overflow-hidden">
@@ -103,7 +109,7 @@ export const MeterCard = ({
               {readings.map((reading) => (
                 <div key={reading.date} className="flex items-center justify-between bg-secondary/50 p-2 rounded-md">
                   <div>
-                    <span className="text-sm">{reading.date}</span>
+                    <span className="text-sm">{formatDate(reading.date)}</span>
                     <span className="text-sm ml-4 font-medium">{reading.value} {unit}</span>
                   </div>
                   <div className="flex space-x-2">
