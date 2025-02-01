@@ -79,6 +79,9 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                   onSelect={(date) => date && setDate(date)}
                   initialFocus
                   locale={de}
+                  disabled={false}
+                  fromYear={1900}
+                  toYear={2100}
                 />
               </PopoverContent>
             </Popover>
