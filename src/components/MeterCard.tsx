@@ -3,25 +3,37 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { AddReadingDialog } from "./AddReadingDialog";
+
+interface Reading {
+  date: string;
+  value: number;
+}
 
 interface MeterCardProps {
   id: string;
   name: string;
+  unit: string;
   isActive: boolean;
-  readings: { date: string; value: number }[];
+  readings: Reading[];
   onToggle: (id: string, value: boolean) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDeleteReading: (meterId: string, date: string) => void;
+  onEditReading: (meterId: string, date: string, newValue: number) => void;
 }
 
 export const MeterCard = ({
   id,
   name,
+  unit,
   isActive,
   readings,
   onToggle,
   onEdit,
   onDelete,
+  onDeleteReading,
+  onEditReading,
 }: MeterCardProps) => {
   const totalConsumption = readings.reduce((acc, curr, idx) => {
     if (idx === 0) return 0;
@@ -68,7 +80,7 @@ export const MeterCard = ({
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Consumption</span>
-            <span className="text-sm font-medium">{totalConsumption.toFixed(2)} units</span>
+            <span className="text-sm font-medium">{totalConsumption.toFixed(2)} {unit}</span>
           </div>
           <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -85,6 +97,41 @@ export const MeterCard = ({
               </LineChart>
             </ResponsiveContainer>
           </div>
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Readings</h4>
+            <div className="space-y-2">
+              {readings.map((reading) => (
+                <div key={reading.date} className="flex items-center justify-between bg-secondary/50 p-2 rounded-md">
+                  <div>
+                    <span className="text-sm">{reading.date}</span>
+                    <span className="text-sm ml-4 font-medium">{reading.value} {unit}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newValue = window.prompt("Enter new value:", reading.value.toString());
+                        if (newValue && !isNaN(parseFloat(newValue))) {
+                          onEditReading(id, reading.date, parseFloat(newValue));
+                        }
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteReading(id, reading.date)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <AddReadingDialog meterId={id} onAddReading={(meterId, value, date) => onEditReading(meterId, date, value)} />
         </div>
       </CardContent>
     </Card>

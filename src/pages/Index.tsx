@@ -1,24 +1,30 @@
 import { useState } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
-import { AddReadingDialog } from "@/components/AddReadingDialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+
+interface Reading {
+  date: string;
+  value: number;
+}
 
 interface Meter {
   id: string;
   name: string;
+  unit: string;
   isActive: boolean;
-  readings: { date: string; value: number }[];
+  readings: Reading[];
 }
 
 const Index = () => {
   const [meters, setMeters] = useState<Meter[]>([]);
   const { toast } = useToast();
 
-  const handleAddMeter = (name: string) => {
+  const handleAddMeter = (name: string, unit: string) => {
     const newMeter: Meter = {
       id: crypto.randomUUID(),
       name,
+      unit,
       isActive: true,
       readings: [],
     };
@@ -50,22 +56,48 @@ const Index = () => {
     });
   };
 
-  const handleAddReading = (meterId: string, value: number) => {
+  const handleEditReading = (meterId: string, date: string, value: number) => {
     setMeters((prev) =>
       prev.map((meter) => {
         if (meter.id === meterId) {
-          const newReadings = [
-            ...meter.readings,
-            { date: new Date().toLocaleDateString(), value },
-          ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const existingReadingIndex = meter.readings.findIndex(r => r.date === date);
+          let newReadings;
+          
+          if (existingReadingIndex >= 0) {
+            newReadings = [...meter.readings];
+            newReadings[existingReadingIndex] = { date, value };
+          } else {
+            newReadings = [...meter.readings, { date, value }];
+          }
+          
+          newReadings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           return { ...meter, readings: newReadings };
         }
         return meter;
       })
     );
     toast({
-      title: "Reading Added",
-      description: "New reading has been recorded successfully.",
+      title: "Reading Updated",
+      description: "Reading has been updated successfully.",
+    });
+  };
+
+  const handleDeleteReading = (meterId: string, date: string) => {
+    setMeters((prev) =>
+      prev.map((meter) => {
+        if (meter.id === meterId) {
+          return {
+            ...meter,
+            readings: meter.readings.filter((r) => r.date !== date),
+          };
+        }
+        return meter;
+      })
+    );
+    toast({
+      title: "Reading Deleted",
+      description: "Reading has been deleted successfully.",
+      variant: "destructive",
     });
   };
 
@@ -79,20 +111,14 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {meters.map((meter) => (
             <div key={meter.id} className="slide-in">
-              <div className="space-y-4">
-                <MeterCard
-                  {...meter}
-                  onToggle={handleToggleMeter}
-                  onEdit={() => {}}
-                  onDelete={handleDeleteMeter}
-                />
-                <div className="px-4">
-                  <AddReadingDialog
-                    meterId={meter.id}
-                    onAddReading={handleAddReading}
-                  />
-                </div>
-              </div>
+              <MeterCard
+                {...meter}
+                onToggle={handleToggleMeter}
+                onEdit={() => {}}
+                onDelete={handleDeleteMeter}
+                onDeleteReading={handleDeleteReading}
+                onEditReading={handleEditReading}
+              />
             </div>
           ))}
         </div>
