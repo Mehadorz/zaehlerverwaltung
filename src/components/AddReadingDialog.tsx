@@ -17,7 +17,7 @@ interface AddReadingDialogProps {
 
 export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProps) => {
   const [value, setValue] = useState("");
-  const [date, setDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
@@ -25,9 +25,16 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
     e.preventDefault();
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      onAddReading(meterId, numValue, format(date, "yyyy-MM-dd"));
+      onAddReading(meterId, numValue, format(selectedDate, "yyyy-MM-dd"));
       setValue("");
       setOpen(false);
+    }
+  };
+
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setSelectedDate(newDate);
+      setDatePopoverOpen(false);
     }
   };
 
@@ -66,20 +73,17 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                    !selectedDate && "text-muted-foreground"
                   )}
                 >
-                  {date ? format(date, "dd.MM.yyyy", { locale: de }) : <span>Pick a date</span>}
+                  {selectedDate ? format(selectedDate, "dd.MM.yyyy", { locale: de }) : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={date}
-                  onSelect={(newDate) => {
-                    setDate(newDate || new Date());
-                    setDatePopoverOpen(false);
-                  }}
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
                   initialFocus
                   locale={de}
                 />
