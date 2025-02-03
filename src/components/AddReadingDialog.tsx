@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -25,7 +25,6 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
     e.preventDefault();
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
-      // Format date as YYYY-MM-DD for backend storage
       onAddReading(meterId, numValue, format(date, "yyyy-MM-dd"));
       setValue("");
       setOpen(false);
@@ -61,7 +60,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
           </div>
           <div className="space-y-2">
             <Label>Date</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -77,12 +76,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(newDate) => {
-                    if (newDate) {
-                      setDate(newDate);
-                      setCalendarOpen(false);
-                    }
-                  }}
+                  onSelect={(newDate) => newDate && setDate(newDate)}
                   initialFocus
                   locale={de}
                 />
