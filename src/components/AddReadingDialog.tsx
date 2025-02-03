@@ -31,13 +31,6 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
     }
   };
 
-  const handleDateSelect = (newDate: Date | undefined) => {
-    if (newDate) {
-      setDate(newDate);
-      setDatePopoverOpen(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -83,11 +76,14 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={handleDateSelect}
+                  onSelect={(newDate) => {
+                    if (newDate) {
+                      setDate(newDate);
+                      setDatePopoverOpen(false);
+                    }
+                  }}
                   initialFocus
                   locale={de}
-                  fromYear={1990}
-                  toYear={2050}
                 />
               </PopoverContent>
             </Popover>
