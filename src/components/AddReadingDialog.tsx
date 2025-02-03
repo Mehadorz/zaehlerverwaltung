@@ -19,7 +19,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
   const [value, setValue] = useState("");
   const [date, setDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +28,13 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
       onAddReading(meterId, numValue, format(date, "yyyy-MM-dd"));
       setValue("");
       setOpen(false);
+    }
+  };
+
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setDate(newDate);
+      setDatePopoverOpen(false);
     }
   };
 
@@ -60,7 +67,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
           </div>
           <div className="space-y-2">
             <Label>Date</Label>
-            <Popover>
+            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -76,9 +83,11 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(newDate) => newDate && setDate(newDate)}
+                  onSelect={handleDateSelect}
                   initialFocus
                   locale={de}
+                  fromYear={1990}
+                  toYear={2050}
                 />
               </PopoverContent>
             </Popover>
