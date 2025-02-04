@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddReadingDialogProps {
   meterId: string;
@@ -17,17 +18,39 @@ interface AddReadingDialogProps {
 
 export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProps) => {
   const [value, setValue] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
-  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
-      onAddReading(meterId, numValue, format(selectedDate, "yyyy-MM-dd"));
-      setValue("");
-      setOpen(false);
+    
+    if (isNaN(numValue)) {
+      toast({
+        title: "Ungültiger Wert",
+        description: "Bitte geben Sie einen gültigen Zahlenwert ein.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onAddReading(meterId, numValue, format(date, "yyyy-MM-dd"));
+    setValue("");
+    setDate(new Date());
+    setOpen(false);
+    
+    toast({
+      title: "Zählerstand hinzugefügt",
+      description: `Neuer Zählerstand ${numValue} für ${format(date, "dd.MM.yyyy", { locale: de })} wurde gespeichert.`,
+    });
+  };
+
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      setDate(newDate);
+      setCalendarOpen(false);
     }
   };
 
@@ -36,60 +59,54 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Plus className="h-4 w-4 mr-2" />
-          Add Reading
+          Zählerstand hinzufügen
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Reading</DialogTitle>
+          <DialogTitle>Neuen Zählerstand eintragen</DialogTitle>
           <DialogDescription>
-            Enter the meter reading value and select a date.
+            Geben Sie den Zählerstand ein und wählen Sie das Datum aus.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reading">Reading Value</Label>
+            <Label htmlFor="reading">Zählerstand</Label>
             <Input
               id="reading"
               type="number"
               step="0.01"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              placeholder="Enter reading value"
+              placeholder="Zählerstand eingeben"
             />
           </div>
           <div className="space-y-2">
-            <Label>Date</Label>
-            <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+            <Label>Datum</Label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
+                    !date && "text-muted-foreground"
                   )}
                 >
-                  {selectedDate ? format(selectedDate, "dd.MM.yyyy", { locale: de }) : <span>Pick a date</span>}
+                  {format(date, "dd.MM.yyyy", { locale: de })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setSelectedDate(date);
-                      setDatePopoverOpen(false);
-                    }
-                  }}
-                  defaultMonth={selectedDate}
+                  selected={date}
+                  onSelect={handleDateSelect}
                   initialFocus
                   locale={de}
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <Button type="submit" className="w-full">Add Reading</Button>
+          <Button type="submit" className="w-full">Zählerstand speichern</Button>
         </form>
       </DialogContent>
     </Dialog>
