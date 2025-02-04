@@ -31,13 +31,6 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
     }
   };
 
-  const handleDateSelect = (newDate: Date | undefined) => {
-    if (newDate) {
-      setSelectedDate(newDate);
-      setDatePopoverOpen(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -83,7 +76,13 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={handleDateSelect}
+                  onSelect={(date) => {
+                    if (date) {
+                      console.log('Selected date:', date);
+                      setSelectedDate(date);
+                      setDatePopoverOpen(false);
+                    }
+                  }}
                   initialFocus
                   locale={de}
                 />
