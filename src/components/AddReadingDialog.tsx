@@ -78,11 +78,11 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
                   selected={selectedDate}
                   onSelect={(date) => {
                     if (date) {
-                      console.log('Selected date:', date);
                       setSelectedDate(date);
                       setDatePopoverOpen(false);
                     }
                   }}
+                  defaultMonth={selectedDate}
                   initialFocus
                   locale={de}
                 />
