@@ -31,6 +31,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
           title: "Ungültiges Datum",
           description: "Bitte geben Sie ein gültiges Datum im Format TT.MM.JJJJ ein.",
           variant: "destructive",
+          duration: 10000,
         });
         return;
       }
@@ -40,6 +41,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
           title: "Ungültiger Wert",
           description: "Bitte geben Sie einen gültigen Zahlenwert ein.",
           variant: "destructive",
+          duration: 10000,
         });
         return;
       }
@@ -52,12 +54,14 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
       toast({
         title: "Zählerstand hinzugefügt",
         description: `Neuer Zählerstand ${numValue} für ${format(parsedDate, "dd.MM.yyyy", { locale: de })} wurde gespeichert.`,
+        duration: 10000,
       });
     } catch (error) {
       toast({
         title: "Ungültiges Datum",
         description: "Bitte geben Sie ein gültiges Datum im Format TT.MM.JJJJ ein.",
         variant: "destructive",
+        duration: 10000,
       });
     }
   };

@@ -41,6 +41,7 @@ const Index = () => {
     toast({
       title: "Zähler hinzugefügt",
       description: `${name} wurde erfolgreich hinzugefügt.`,
+      duration: 10000,
     });
   };
 
@@ -53,6 +54,7 @@ const Index = () => {
     toast({
       title: "Zähler bearbeitet",
       description: `Zähler wurde erfolgreich aktualisiert.`,
+      duration: 10000,
     });
   };
 
@@ -65,6 +67,7 @@ const Index = () => {
     toast({
       title: "Status aktualisiert",
       description: `Zähler wurde ${isActive ? 'aktiviert' : 'deaktiviert'}.`,
+      duration: 10000,
     });
   };
 
@@ -74,6 +77,7 @@ const Index = () => {
       title: "Zähler gelöscht",
       description: "Der Zähler wurde erfolgreich gelöscht.",
       variant: "destructive",
+      duration: 10000,
     });
   };
 
