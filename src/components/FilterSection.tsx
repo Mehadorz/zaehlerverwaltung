@@ -19,15 +19,16 @@ export const FilterSection = ({
   onFilterStatusChange,
 }: FilterSectionProps) => {
   return (
-    <Card className="mb-6 bg-white/30 backdrop-blur-sm border border-white/20">
+    <Card className="mb-6 glass-card">
       <CardContent className="p-6">
+        <h2 className="text-xl font-semibold mb-4 text-left">Filter</h2>
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="flex-1">
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
           </div>
-          <div className="w-full sm:w-48">
+          <div className="w-full sm:w-48 flex flex-col justify-end">
             <Select value={filterStatus} onValueChange={onFilterStatusChange}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border border-white/20">
                 <SelectValue placeholder="Status Filter" />
               </SelectTrigger>
               <SelectContent>

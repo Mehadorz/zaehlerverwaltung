@@ -36,29 +36,29 @@ export const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilte
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="fromDate">Von</Label>
-            <Input
-              type="date"
-              id="fromDate"
-              value={format(dateRange.from, "yyyy-MM-dd")}
-              onChange={handleFromChange}
-            />
-          </div>
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="toDate">Bis</Label>
-            <Input
-              type="date"
-              id="toDate"
-              value={format(dateRange.to, "yyyy-MM-dd")}
-              onChange={handleToChange}
-            />
-          </div>
+    <div className="space-y-2">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 space-y-2">
+          <Label htmlFor="fromDate">Von</Label>
+          <Input
+            type="date"
+            id="fromDate"
+            value={format(dateRange.from, "yyyy-MM-dd")}
+            onChange={handleFromChange}
+            className="bg-white/50 backdrop-blur-sm border border-white/20"
+          />
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex-1 space-y-2">
+          <Label htmlFor="toDate">Bis</Label>
+          <Input
+            type="date"
+            id="toDate"
+            value={format(dateRange.to, "yyyy-MM-dd")}
+            onChange={handleToChange}
+            className="bg-white/50 backdrop-blur-sm border border-white/20"
+          />
+        </div>
+      </div>
+    </div>
   );
 };
