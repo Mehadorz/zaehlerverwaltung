@@ -29,37 +29,37 @@ export const AddMeterDialog = ({ onAddMeter }: AddMeterDialogProps) => {
       <DialogTrigger asChild>
         <Button className="fixed bottom-6 right-6 rounded-full shadow-lg">
           <Plus className="h-4 w-4 mr-2" />
-          Add Meter
+          Zähler hinzufügen
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Meter</DialogTitle>
+          <DialogTitle>Neuen Zähler hinzufügen</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Meter Name</Label>
+            <Label htmlFor="name">Zählername</Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter meter name"
+              placeholder="Zählername eingeben"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="unit">Unit</Label>
+            <Label htmlFor="unit">Einheit</Label>
             <Select value={unit} onValueChange={setUnit}>
               <SelectTrigger>
-                <SelectValue placeholder="Select unit" />
+                <SelectValue placeholder="Einheit auswählen" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="kWh">kWh</SelectItem>
                 <SelectItem value="m³">m³</SelectItem>
-                <SelectItem value="L">Liters</SelectItem>
+                <SelectItem value="L">Liter</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" className="w-full">Add Meter</Button>
+          <Button type="submit" className="w-full">Zähler hinzufügen</Button>
         </form>
       </DialogContent>
     </Dialog>
