@@ -2,9 +2,8 @@ import { useState } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
 import { useToast } from "@/hooks/use-toast";
-import { DateRangeFilter } from "@/components/DateRangeFilter";
 import { subYears, isWithinInterval, parseISO } from "date-fns";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterSection } from "@/components/FilterSection";
 
 interface Reading {
   date: string;
@@ -151,26 +150,12 @@ const Index = () => {
           <h1 className="text-3xl font-bold">Zählermanagement</h1>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <DateRangeFilter
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
-          <div className="w-full sm:w-48">
-            <Select value={filterStatus} onValueChange={(value: FilterStatus) => setFilterStatus(value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Zähler</SelectItem>
-                <SelectItem value="active">Aktive Zähler</SelectItem>
-                <SelectItem value="inactive">Inaktive Zähler</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <FilterSection
+          dateRange={dateRange}
+          filterStatus={filterStatus}
+          onDateRangeChange={setDateRange}
+          onFilterStatusChange={setFilterStatus}
+        />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMeters.map((meter) => (

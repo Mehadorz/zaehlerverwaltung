@@ -1,0 +1,44 @@
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface FilterSectionProps {
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+  filterStatus: "all" | "active" | "inactive";
+  onDateRangeChange: (range: { from: Date; to: Date }) => void;
+  onFilterStatusChange: (value: "all" | "active" | "inactive") => void;
+}
+
+export const FilterSection = ({
+  dateRange,
+  filterStatus,
+  onDateRangeChange,
+  onFilterStatusChange,
+}: FilterSectionProps) => {
+  return (
+    <Card className="mb-6 bg-white/30 backdrop-blur-sm border border-white/20">
+      <CardContent className="p-6">
+        <div className="flex flex-col sm:flex-row gap-6">
+          <div className="flex-1">
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
+          </div>
+          <div className="w-full sm:w-48">
+            <Select value={filterStatus} onValueChange={onFilterStatusChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Status Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Zähler</SelectItem>
+                <SelectItem value="active">Aktive Zähler</SelectItem>
+                <SelectItem value="inactive">Inaktive Zähler</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
