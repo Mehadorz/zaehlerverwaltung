@@ -6,6 +6,10 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { AddReadingDialog } from "./AddReadingDialog";
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 interface Reading {
   date: string;
@@ -19,7 +23,7 @@ interface MeterCardProps {
   isActive: boolean;
   readings: Reading[];
   onToggle: (id: string, value: boolean) => void;
-  onEdit: (id: string) => void;
+  onEdit: (id: string, name: string, unit: string) => void;
   onDelete: (id: string) => void;
   onDeleteReading: (meterId: string, date: string) => void;
   onEditReading: (meterId: string, date: string, newValue: number) => void;
@@ -37,6 +41,10 @@ export const MeterCard = ({
   onDeleteReading,
   onEditReading,
 }: MeterCardProps) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState(name);
+  const [editUnit, setEditUnit] = useState(unit);
+
   const totalConsumption = readings.reduce((acc, curr, idx) => {
     if (idx === 0) return 0;
     return acc + (curr.value - readings[idx - 1].value);
@@ -51,6 +59,12 @@ export const MeterCard = ({
     return format(parse(date, "yyyy-MM-dd", new Date()), "dd.MM.yyyy", { locale: de });
   };
 
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onEdit(id, editName, editUnit);
+    setIsEditDialogOpen(false);
+  };
+
   return (
     <Card className="meter-card overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -60,13 +74,40 @@ export const MeterCard = ({
             checked={isActive}
             onCheckedChange={(checked) => onToggle(id, checked)}
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(id)}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Zähler bearbeiten</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-unit">Einheit</Label>
+                  <Input
+                    id="edit-unit"
+                    value={editUnit}
+                    onChange={(e) => setEditUnit(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" className="w-full">Speichern</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
           <Button
             variant="ghost"
             size="icon"
@@ -81,11 +122,11 @@ export const MeterCard = ({
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Status</span>
             <span className={`text-sm font-medium ${isActive ? 'text-green-500' : 'text-red-500'}`}>
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? 'Aktiv' : 'Inaktiv'}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Total Consumption</span>
+            <span className="text-sm text-muted-foreground">Gesamtverbrauch</span>
             <span className="text-sm font-medium">{totalConsumption.toFixed(2)} {unit}</span>
           </div>
           <div className="h-[200px] w-full">
@@ -104,20 +145,25 @@ export const MeterCard = ({
             </ResponsiveContainer>
           </div>
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Readings</h4>
+            <h4 className="text-sm font-medium">Zählerstände</h4>
             <div className="space-y-2">
-              {readings.map((reading) => (
+              {readings.map((reading, idx) => (
                 <div key={reading.date} className="flex items-center justify-between bg-secondary/50 p-2 rounded-md">
-                  <div>
-                    <span className="text-sm">{formatDate(reading.date)}</span>
-                    <span className="text-sm ml-4 font-medium">{reading.value} {unit}</span>
+                  <div className="space-y-1">
+                    <div className="text-sm">{formatDate(reading.date)}</div>
+                    <div className="text-sm font-medium">{reading.value} {unit}</div>
+                    {idx > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        Verbrauch: {(reading.value - readings[idx - 1].value).toFixed(2)} {unit}
+                      </div>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        const newValue = window.prompt("Enter new value:", reading.value.toString());
+                        const newValue = window.prompt("Neuen Wert eingeben:", reading.value.toString());
                         if (newValue && !isNaN(parseFloat(newValue))) {
                           onEditReading(id, reading.date, parseFloat(newValue));
                         }

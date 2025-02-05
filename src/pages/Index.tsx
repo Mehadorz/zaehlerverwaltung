@@ -2,6 +2,8 @@ import { useState } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
 import { useToast } from "@/hooks/use-toast";
+import { DateRangeFilter } from "@/components/DateRangeFilter";
+import { subYears, isWithinInterval, parseISO } from "date-fns";
 
 interface Reading {
   date: string;
@@ -18,6 +20,10 @@ interface Meter {
 
 const Index = () => {
   const [meters, setMeters] = useState<Meter[]>([]);
+  const [dateRange, setDateRange] = useState({
+    from: subYears(new Date(), 1),
+    to: new Date(),
+  });
   const { toast } = useToast();
 
   const handleAddMeter = (name: string, unit: string) => {
@@ -30,8 +36,20 @@ const Index = () => {
     };
     setMeters((prev) => [...prev, newMeter]);
     toast({
-      title: "Meter Added",
-      description: `${name} has been added successfully.`,
+      title: "Zähler hinzugefügt",
+      description: `${name} wurde erfolgreich hinzugefügt.`,
+    });
+  };
+
+  const handleEditMeter = (id: string, name: string, unit: string) => {
+    setMeters((prev) =>
+      prev.map((meter) =>
+        meter.id === id ? { ...meter, name, unit } : meter
+      )
+    );
+    toast({
+      title: "Zähler bearbeitet",
+      description: `Zähler wurde erfolgreich aktualisiert.`,
     });
   };
 
@@ -42,16 +60,16 @@ const Index = () => {
       )
     );
     toast({
-      title: "Status Updated",
-      description: `Meter status has been ${isActive ? 'activated' : 'deactivated'}.`,
+      title: "Status aktualisiert",
+      description: `Zähler wurde ${isActive ? 'aktiviert' : 'deaktiviert'}.`,
     });
   };
 
   const handleDeleteMeter = (id: string) => {
     setMeters((prev) => prev.filter((meter) => meter.id !== id));
     toast({
-      title: "Meter Deleted",
-      description: "The meter has been deleted successfully.",
+      title: "Zähler gelöscht",
+      description: "Der Zähler wurde erfolgreich gelöscht.",
       variant: "destructive",
     });
   };
@@ -77,8 +95,8 @@ const Index = () => {
       })
     );
     toast({
-      title: "Reading Updated",
-      description: "Reading has been updated successfully.",
+      title: "Zählerstand aktualisiert",
+      description: "Der Zählerstand wurde erfolgreich aktualisiert.",
     });
   };
 
@@ -95,26 +113,41 @@ const Index = () => {
       })
     );
     toast({
-      title: "Reading Deleted",
-      description: "Reading has been deleted successfully.",
+      title: "Zählerstand gelöscht",
+      description: "Der Zählerstand wurde erfolgreich gelöscht.",
       variant: "destructive",
     });
   };
+
+  const filteredMeters = meters.map(meter => ({
+    ...meter,
+    readings: meter.readings.filter(reading => 
+      isWithinInterval(parseISO(reading.date), {
+        start: dateRange.from,
+        end: dateRange.to
+      })
+    )
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Meter Management</h1>
+          <h1 className="text-3xl font-bold">Zählermanagement</h1>
         </div>
+
+        <DateRangeFilter
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {meters.map((meter) => (
+          {filteredMeters.map((meter) => (
             <div key={meter.id} className="slide-in">
               <MeterCard
                 {...meter}
                 onToggle={handleToggleMeter}
-                onEdit={() => {}}
+                onEdit={handleEditMeter}
                 onDelete={handleDeleteMeter}
                 onDeleteReading={handleDeleteReading}
                 onEditReading={handleEditReading}
