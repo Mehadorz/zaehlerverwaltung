@@ -21,7 +21,7 @@ export const FilterSection = ({
   return (
     <Card className="mb-6 glass-card">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-4 text-left">Filter</h2>
+        <h2 className="text-xl font-semibold mb-4 text-left">Verbrauch anzeigen für</h2>
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="flex-1">
             <DateRangeFilter dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
