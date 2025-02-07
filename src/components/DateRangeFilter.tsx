@@ -1,9 +1,9 @@
 
 // Import der date-fns Funktionen für Datumsformatierung
 import { format } from "date-fns";
-// Import der deutschen Lokalisierung
+// Import der deutschen Lokalisierung (wird für Datums-Formatierung verwendet)
 import { de } from "date-fns/locale";
-// Import der UI-Komponenten
+// Import der UI-Komponenten aus der shadcn/ui Bibliothek
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +43,7 @@ export const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilte
     }
   };
 
+  // Render der Komponente mit Eingabefeldern für Start- und Enddatum
   return (
     <div className="space-y-2">
       <div className="flex flex-col sm:flex-row gap-4">

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
 import { useToast } from "@/hooks/use-toast";
-import { subYears, isWithinInterval, parseISO } from "date-fns";
+import { subYears, isWithinInterval, parseISO } from "date-fns"; // Import für Datums-Operationen
 import { FilterSection } from "@/components/FilterSection";
 
 // Definition der Zählerstand-Schnittstelle
@@ -33,12 +33,12 @@ const Index = () => {
     to: new Date(),
   });
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const { toast } = useToast();
+  const { toast } = useToast(); // Hook für Toast-Benachrichtigungen
 
   // Methode zum Hinzufügen eines neuen Zählers
   const handleAddMeter = (name: string, unit: string) => {
     const newMeter: Meter = {
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID(), // Generiert eine eindeutige ID
       name,
       unit,
       isActive: true,
@@ -48,7 +48,7 @@ const Index = () => {
     toast({
       title: "Zähler hinzugefügt",
       description: `${name} wurde erfolgreich hinzugefügt.`,
-      duration: 10000,
+      duration: 10000, // Toast verschwindet nach 10 Sekunden
     });
   };
 
@@ -99,6 +99,7 @@ const Index = () => {
           const existingReadingIndex = meter.readings.findIndex(r => r.date === date);
           let newReadings;
           
+          // Prüft ob bereits ein Zählerstand für dieses Datum existiert
           if (existingReadingIndex >= 0) {
             newReadings = [...meter.readings];
             newReadings[existingReadingIndex] = { date, value };

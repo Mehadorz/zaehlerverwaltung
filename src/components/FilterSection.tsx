@@ -1,9 +1,9 @@
 
 // Import der DateRangeFilter Komponente für die Datumauswahl
 import { DateRangeFilter } from "@/components/DateRangeFilter";
-// Import der Select-Komponenten für das Dropdown-Menü
+// Import der Select-Komponenten für das Dropdown-Menü aus shadcn/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Import der Card-Komponenten für das Layout
+// Import der Card-Komponenten für das Layout aus shadcn/ui
 import { Card, CardContent } from "@/components/ui/card";
 
 // Definition der Props für die FilterSection Komponente
@@ -24,6 +24,7 @@ export const FilterSection = ({
   onDateRangeChange,
   onFilterStatusChange,
 }: FilterSectionProps) => {
+  // Render der Komponente mit Datumsfilter und Statusauswahl
   return (
     <Card className="mb-6 glass-card">
       <CardContent className="p-6">
