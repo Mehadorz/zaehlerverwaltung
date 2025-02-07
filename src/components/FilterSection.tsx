@@ -1,7 +1,12 @@
+
+// Import der DateRangeFilter Komponente für die Datumauswahl
 import { DateRangeFilter } from "@/components/DateRangeFilter";
+// Import der Select-Komponenten für das Dropdown-Menü
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Import der Card-Komponenten für das Layout
 import { Card, CardContent } from "@/components/ui/card";
 
+// Definition der Props für die FilterSection Komponente
 interface FilterSectionProps {
   dateRange: {
     from: Date;
@@ -12,6 +17,7 @@ interface FilterSectionProps {
   onFilterStatusChange: (value: "all" | "active" | "inactive") => void;
 }
 
+// FilterSection Komponente: Stellt die Filteroptionen für Datum und Zählerstatus dar
 export const FilterSection = ({
   dateRange,
   filterStatus,

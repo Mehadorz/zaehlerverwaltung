@@ -1,9 +1,14 @@
+
+// Import der date-fns Funktionen für Datumsformatierung
 import { format } from "date-fns";
+// Import der deutschen Lokalisierung
 import { de } from "date-fns/locale";
+// Import der UI-Komponenten
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Definition der Props für die DateRangeFilter Komponente
 interface DateRangeFilterProps {
   dateRange: {
     from: Date;
@@ -12,7 +17,9 @@ interface DateRangeFilterProps {
   onDateRangeChange: (range: { from: Date; to: Date }) => void;
 }
 
+// DateRangeFilter Komponente: Ermöglicht die Auswahl eines Datumsbereichs
 export const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilterProps) => {
+  // Handler für Änderungen am "Von"-Datum
   const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const date = new Date(e.target.value);
@@ -20,10 +27,11 @@ export const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilte
         onDateRangeChange({ ...dateRange, from: date });
       }
     } catch (error) {
-      console.error("Invalid date format");
+      console.error("Ungültiges Datumsformat");
     }
   };
 
+  // Handler für Änderungen am "Bis"-Datum
   const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const date = new Date(e.target.value);
@@ -31,7 +39,7 @@ export const DateRangeFilter = ({ dateRange, onDateRangeChange }: DateRangeFilte
         onDateRangeChange({ ...dateRange, to: date });
       }
     } catch (error) {
-      console.error("Invalid date format");
+      console.error("Ungültiges Datumsformat");
     }
   };
 

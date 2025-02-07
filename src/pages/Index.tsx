@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
@@ -5,11 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { subYears, isWithinInterval, parseISO } from "date-fns";
 import { FilterSection } from "@/components/FilterSection";
 
+// Definition der Zählerstand-Schnittstelle
 interface Reading {
   date: string;
   value: number;
 }
 
+// Definition der Zähler-Schnittstelle
 interface Meter {
   id: string;
   name: string;
@@ -18,17 +21,21 @@ interface Meter {
   readings: Reading[];
 }
 
+// Definition der möglichen Filterstatus
 type FilterStatus = "all" | "active" | "inactive";
 
+// Hauptkomponente für die Zählerverwaltung
 const Index = () => {
+  // State-Verwaltung für Zähler, Datumsbereich und Filterstatus
   const [meters, setMeters] = useState<Meter[]>([]);
   const [dateRange, setDateRange] = useState({
-    from: subYears(new Date(), 1),
+    from: subYears(new Date(), 1), // Standardmäßig ein Jahr zurück
     to: new Date(),
   });
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const { toast } = useToast();
 
+  // Methode zum Hinzufügen eines neuen Zählers
   const handleAddMeter = (name: string, unit: string) => {
     const newMeter: Meter = {
       id: crypto.randomUUID(),
@@ -45,6 +52,7 @@ const Index = () => {
     });
   };
 
+  // Methode zum Bearbeiten eines existierenden Zählers
   const handleEditMeter = (id: string, name: string, unit: string) => {
     setMeters((prev) =>
       prev.map((meter) =>
@@ -58,6 +66,7 @@ const Index = () => {
     });
   };
 
+  // Methode zum Aktivieren/Deaktivieren eines Zählers
   const handleToggleMeter = (id: string, isActive: boolean) => {
     setMeters((prev) =>
       prev.map((meter) =>
@@ -71,6 +80,7 @@ const Index = () => {
     });
   };
 
+  // Methode zum Löschen eines Zählers
   const handleDeleteMeter = (id: string) => {
     setMeters((prev) => prev.filter((meter) => meter.id !== id));
     toast({
@@ -81,6 +91,7 @@ const Index = () => {
     });
   };
 
+  // Methode zum Bearbeiten eines Zählerstands
   const handleEditReading = (meterId: string, date: string, value: number) => {
     setMeters((prev) =>
       prev.map((meter) => {
@@ -95,6 +106,7 @@ const Index = () => {
             newReadings = [...meter.readings, { date, value }];
           }
           
+          // Sortiere die Zählerstände nach Datum
           newReadings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           return { ...meter, readings: newReadings };
         }
@@ -104,9 +116,11 @@ const Index = () => {
     toast({
       title: "Zählerstand aktualisiert",
       description: "Der Zählerstand wurde erfolgreich aktualisiert.",
+      duration: 10000,
     });
   };
 
+  // Methode zum Löschen eines Zählerstands
   const handleDeleteReading = (meterId: string, date: string) => {
     setMeters((prev) =>
       prev.map((meter) => {
@@ -123,9 +137,11 @@ const Index = () => {
       title: "Zählerstand gelöscht",
       description: "Der Zählerstand wurde erfolgreich gelöscht.",
       variant: "destructive",
+      duration: 10000,
     });
   };
 
+  // Filtere die Zähler basierend auf Status und Datumsbereich
   const filteredMeters = meters
     .filter(meter => {
       switch (filterStatus) {
@@ -147,6 +163,7 @@ const Index = () => {
       )
     }));
 
+  // Render der Komponente
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
