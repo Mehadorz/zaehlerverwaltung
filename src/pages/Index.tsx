@@ -1,10 +1,11 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
+import { StorageToggle } from "@/components/StorageToggle";
 import { useToast } from "@/hooks/use-toast";
-import { subYears, isWithinInterval, parseISO } from "date-fns"; // Import für Datums-Operationen
+import { subYears, isWithinInterval, parseISO } from "date-fns";
 import { FilterSection } from "@/components/FilterSection";
+import { databaseService } from "@/services/databaseService";
 
 // Definition der Zählerstand-Schnittstelle
 interface Reading {
@@ -26,29 +27,69 @@ type FilterStatus = "all" | "active" | "inactive";
 
 // Hauptkomponente für die Zählerverwaltung
 const Index = () => {
-  // State-Verwaltung für Zähler, Datumsbereich und Filterstatus
   const [meters, setMeters] = useState<Meter[]>([]);
+  const [useDatabase, setUseDatabase] = useState(false);
   const [dateRange, setDateRange] = useState({
-    from: subYears(new Date(), 1), // Standardmäßig ein Jahr zurück
+    from: subYears(new Date(), 1),
     to: new Date(),
   });
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
-  const { toast } = useToast(); // Hook für Toast-Benachrichtigungen
+  const { toast } = useToast();
 
-  // Methode zum Hinzufügen eines neuen Zählers
-  const handleAddMeter = (name: string, unit: string) => {
-    const newMeter: Meter = {
-      id: crypto.randomUUID(), // Generiert eine eindeutige ID
+  // Lade Zähler beim Start und bei Änderung der Speichermethode
+  useEffect(() => {
+    const loadMeters = async () => {
+      if (useDatabase) {
+        const dbMeters = await databaseService.getAllMeters();
+        setMeters(dbMeters);
+      } else {
+        const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
+        setMeters(localMeters);
+      }
+    };
+    loadMeters();
+  }, [useDatabase]);
+
+  // Speichere Änderungen
+  const saveMeters = async (newMeters: Meter[]) => {
+    if (useDatabase) {
+      // Datenbankaktualisierung erfolgt über individuelle Service-Aufrufe
+    } else {
+      localStorage.setItem("meters", JSON.stringify(newMeters));
+    }
+    setMeters(newMeters);
+  };
+
+  const handleStorageChange = (useDb: boolean) => {
+    setUseDatabase(useDb);
+  };
+
+  const handleAddMeter = async (name: string, unit: string) => {
+    const newMeter: Omit<Meter, 'id'> = {
       name,
       unit,
       isActive: true,
       readings: [],
     };
-    setMeters((prev) => [...prev, newMeter]);
+
+    if (useDatabase) {
+      const addedMeter = await databaseService.addMeter(newMeter);
+      if (addedMeter) {
+        setMeters(prev => [...prev, addedMeter]);
+      }
+    } else {
+      const meterWithId: Meter = {
+        ...newMeter,
+        id: crypto.randomUUID(),
+      };
+      setMeters(prev => [...prev, meterWithId]);
+      localStorage.setItem("meters", JSON.stringify([...meters, meterWithId]));
+    }
+
     toast({
       title: "Zähler hinzugefügt",
       description: `${name} wurde erfolgreich hinzugefügt.`,
-      duration: 10000, // Toast verschwindet nach 10 Sekunden
+      duration: 10000,
     });
   };
 
@@ -164,12 +205,12 @@ const Index = () => {
       )
     }));
 
-  // Render der Komponente
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Zählermanagement</h1>
+          <StorageToggle onStorageChange={handleStorageChange} />
         </div>
 
         <FilterSection
