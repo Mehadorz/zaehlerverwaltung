@@ -1,31 +1,41 @@
+
 import { useState } from "react";
+// Import von date-fns Funktionen für die Datumsformatierung
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
+// Import der UI-Komponenten
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
+// Import des Toast-Hooks für Benachrichtigungen
 import { useToast } from "@/hooks/use-toast";
 
+// Definition der Props für den AddReadingDialog
 interface AddReadingDialogProps {
   meterId: string;
   onAddReading: (meterId: string, value: number, date: string) => void;
 }
 
+// AddReadingDialog Komponente: Ermöglicht das Hinzufügen neuer Zählerstände
 export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProps) => {
+  // State für die Eingabefelder und den Dialog-Status
   const [value, setValue] = useState("");
   const [dateInput, setDateInput] = useState(format(new Date(), "dd.MM.yyyy"));
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
+  // Handler für das Absenden des Formulars
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numValue = parseFloat(value);
     
     try {
+      // Versucht das eingegebene Datum zu parsen
       const parsedDate = parse(dateInput, "dd.MM.yyyy", new Date());
       
+      // Überprüft ob das Datum gültig ist
       if (isNaN(parsedDate.getTime())) {
         toast({
           title: "Ungültiges Datum",
@@ -36,6 +46,7 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
         return;
       }
 
+      // Überprüft ob der Wert eine gültige Zahl ist
       if (isNaN(numValue)) {
         toast({
           title: "Ungültiger Wert",
@@ -46,11 +57,13 @@ export const AddReadingDialog = ({ meterId, onAddReading }: AddReadingDialogProp
         return;
       }
 
+      // Fügt den neuen Zählerstand hinzu
       onAddReading(meterId, numValue, format(parsedDate, "yyyy-MM-dd"));
       setValue("");
       setDateInput(format(new Date(), "dd.MM.yyyy"));
       setOpen(false);
       
+      // Erfolgsmeldung anzeigen
       toast({
         title: "Zählerstand hinzugefügt",
         description: `Neuer Zählerstand ${numValue} für ${format(parsedDate, "dd.MM.yyyy", { locale: de })} wurde gespeichert.`,

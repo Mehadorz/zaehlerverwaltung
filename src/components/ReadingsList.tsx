@@ -1,13 +1,19 @@
+
+// Import der UI-Komponenten
 import { Button } from "@/components/ui/button";
+// Import der Icons aus der lucide-react Bibliothek
 import { Pencil, Trash2 } from "lucide-react";
+// Import von date-fns Funktionen für die Datumsformatierung
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
 
+// Definition der Schnittstelle für einen Zählerstand
 interface Reading {
   date: string;
   value: number;
 }
 
+// Definition der Props für die ReadingsList
 interface ReadingsListProps {
   readings: Reading[];
   unit: string;
@@ -15,7 +21,9 @@ interface ReadingsListProps {
   onDeleteReading: (date: string) => void;
 }
 
+// ReadingsList Komponente: Zeigt eine Liste aller Zählerstände mit Bearbeitungsmöglichkeiten
 export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }: ReadingsListProps) => {
+  // Funktion zum Formatieren des Datums
   const formatDate = (date: string) => {
     return format(parse(date, "yyyy-MM-dd", new Date()), "dd.MM.yyyy", { locale: de });
   };

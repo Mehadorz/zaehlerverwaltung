@@ -1,14 +1,20 @@
+
+// Import der UI-Komponenten für das Layout
 import { Card, CardContent } from "@/components/ui/card";
+// Import der Dialog-Komponenten für das Hinzufügen und Bearbeiten von Zählerständen
 import { AddReadingDialog } from "./AddReadingDialog";
 import { MeterHeader } from "./MeterHeader";
+// Import der Komponenten für die Darstellung der Verbrauchsdaten
 import { ConsumptionChart } from "./ConsumptionChart";
 import { ReadingsList } from "./ReadingsList";
 
+// Definition der Schnittstelle für einen Zählerstand
 interface Reading {
   date: string;
   value: number;
 }
 
+// Definition der Props für die MeterCard
 interface MeterCardProps {
   id: string;
   name: string;
@@ -22,6 +28,7 @@ interface MeterCardProps {
   onEditReading: (meterId: string, date: string, newValue: number) => void;
 }
 
+// MeterCard Komponente: Zeigt alle Informationen und Aktionen für einen Zähler an
 export const MeterCard = ({
   id,
   name,
@@ -34,6 +41,7 @@ export const MeterCard = ({
   onDeleteReading,
   onEditReading,
 }: MeterCardProps) => {
+  // Berechnet den Gesamtverbrauch aus allen Zählerständen
   const totalConsumption = readings.reduce((acc, curr, idx) => {
     if (idx === 0) return 0;
     return acc + (curr.value - readings[idx - 1].value);

@@ -1,12 +1,17 @@
+
+// Import der UI-Komponenten
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+// Import der Icons aus der lucide-react Bibliothek
 import { Pencil, Trash2 } from "lucide-react";
+// Import der Dialog-Komponenten für das Bearbeiten von Zählern
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 
+// Definition der Props für den MeterHeader
 interface MeterHeaderProps {
   id: string;
   name: string;
@@ -17,6 +22,7 @@ interface MeterHeaderProps {
   onDelete: (id: string) => void;
 }
 
+// MeterHeader Komponente: Zeigt den Header eines Zählers mit Aktions-Buttons
 export const MeterHeader = ({
   id,
   name,
@@ -26,10 +32,12 @@ export const MeterHeader = ({
   onEdit,
   onDelete,
 }: MeterHeaderProps) => {
+  // State für den Dialog zum Bearbeiten des Zählers
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState(name);
   const [editUnit, setEditUnit] = useState(unit);
 
+  // Handler für das Speichern der Änderungen
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onEdit(id, editName, editUnit);
