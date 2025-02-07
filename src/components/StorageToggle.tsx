@@ -23,7 +23,7 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
         onCheckedChange={handleToggle}
       />
       <Label htmlFor="storage-toggle">
-        {useDatabase ? "MariaDB Speicherung" : "Lokale Speicherung"}
+        {useDatabase ? "Datenbank Speicherung" : "Lokale Speicherung"}
       </Label>
     </div>
   );
