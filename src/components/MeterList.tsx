@@ -27,6 +27,8 @@ interface MeterListProps {
   onDeleteMeter: (id: string) => void;
   onDeleteReading: (meterId: string, date: string) => void;
   onEditReading: (meterId: string, date: string, value: number) => void;
+  onUpdateMeterNotes: (id: string, notes: string) => void;
+  onUpdateReadingNotes: (meterId: string, date: string, notes: string) => void;
 }
 
 export const MeterList = ({
@@ -38,6 +40,8 @@ export const MeterList = ({
   onDeleteMeter,
   onDeleteReading,
   onEditReading,
+  onUpdateMeterNotes,
+  onUpdateReadingNotes,
 }: MeterListProps) => {
   // Filtere die Zähler basierend auf Status und Datumsbereich
   const filteredMeters = meters
@@ -72,10 +76,11 @@ export const MeterList = ({
             onDelete={onDeleteMeter}
             onDeleteReading={onDeleteReading}
             onEditReading={onEditReading}
+            onUpdateMeterNotes={onUpdateMeterNotes}
+            onUpdateReadingNotes={onUpdateReadingNotes}
           />
         </div>
       ))}
     </div>
   );
 };
-
