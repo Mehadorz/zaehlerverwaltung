@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
-import { MeterCard } from "@/components/MeterCard";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
-import { StorageToggle } from "@/components/StorageToggle";
-import { useToast } from "@/hooks/use-toast";
-import { subYears, isWithinInterval, parseISO } from "date-fns";
 import { FilterSection } from "@/components/FilterSection";
+import { HeaderSection } from "@/components/HeaderSection";
+import { MeterList } from "@/components/MeterList";
+import { useToast } from "@/hooks/use-toast";
+import { subYears } from "date-fns";
 import { databaseService } from "@/services/databaseService";
 
 // Definition der Zählerstand-Schnittstelle
@@ -27,6 +28,7 @@ type FilterStatus = "all" | "active" | "inactive";
 
 // Hauptkomponente für die Zählerverwaltung
 const Index = () => {
+  // State-Verwaltung
   const [meters, setMeters] = useState<Meter[]>([]);
   const [useDatabase, setUseDatabase] = useState(false);
   const [dateRange, setDateRange] = useState({
@@ -50,16 +52,7 @@ const Index = () => {
     loadMeters();
   }, [useDatabase]);
 
-  // Speichere Änderungen
-  const saveMeters = async (newMeters: Meter[]) => {
-    if (useDatabase) {
-      // Datenbankaktualisierung erfolgt über individuelle Service-Aufrufe
-    } else {
-      localStorage.setItem("meters", JSON.stringify(newMeters));
-    }
-    setMeters(newMeters);
-  };
-
+  // Event Handler
   const handleStorageChange = (useDb: boolean) => {
     setUseDatabase(useDb);
   };
@@ -93,7 +86,6 @@ const Index = () => {
     });
   };
 
-  // Methode zum Bearbeiten eines existierenden Zählers
   const handleEditMeter = (id: string, name: string, unit: string) => {
     setMeters((prev) =>
       prev.map((meter) =>
@@ -107,7 +99,6 @@ const Index = () => {
     });
   };
 
-  // Methode zum Aktivieren/Deaktivieren eines Zählers
   const handleToggleMeter = (id: string, isActive: boolean) => {
     setMeters((prev) =>
       prev.map((meter) =>
@@ -121,7 +112,6 @@ const Index = () => {
     });
   };
 
-  // Methode zum Löschen eines Zählers
   const handleDeleteMeter = (id: string) => {
     setMeters((prev) => prev.filter((meter) => meter.id !== id));
     toast({
@@ -132,7 +122,6 @@ const Index = () => {
     });
   };
 
-  // Methode zum Bearbeiten eines Zählerstands
   const handleEditReading = (meterId: string, date: string, value: number) => {
     setMeters((prev) =>
       prev.map((meter) => {
@@ -140,7 +129,6 @@ const Index = () => {
           const existingReadingIndex = meter.readings.findIndex(r => r.date === date);
           let newReadings;
           
-          // Prüft ob bereits ein Zählerstand für dieses Datum existiert
           if (existingReadingIndex >= 0) {
             newReadings = [...meter.readings];
             newReadings[existingReadingIndex] = { date, value };
@@ -148,7 +136,6 @@ const Index = () => {
             newReadings = [...meter.readings, { date, value }];
           }
           
-          // Sortiere die Zählerstände nach Datum
           newReadings.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           return { ...meter, readings: newReadings };
         }
@@ -162,7 +149,6 @@ const Index = () => {
     });
   };
 
-  // Methode zum Löschen eines Zählerstands
   const handleDeleteReading = (meterId: string, date: string) => {
     setMeters((prev) =>
       prev.map((meter) => {
@@ -183,36 +169,11 @@ const Index = () => {
     });
   };
 
-  // Filtere die Zähler basierend auf Status und Datumsbereich
-  const filteredMeters = meters
-    .filter(meter => {
-      switch (filterStatus) {
-        case "active":
-          return meter.isActive;
-        case "inactive":
-          return !meter.isActive;
-        default:
-          return true;
-      }
-    })
-    .map(meter => ({
-      ...meter,
-      readings: meter.readings.filter(reading => 
-        isWithinInterval(parseISO(reading.date), {
-          start: dateRange.from,
-          end: dateRange.to
-        })
-      )
-    }));
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Zählermanagement</h1>
-          <StorageToggle onStorageChange={handleStorageChange} />
-        </div>
-
+        <HeaderSection onStorageChange={handleStorageChange} />
+        
         <FilterSection
           dateRange={dateRange}
           filterStatus={filterStatus}
@@ -220,20 +181,16 @@ const Index = () => {
           onFilterStatusChange={setFilterStatus}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMeters.map((meter) => (
-            <div key={meter.id} className="slide-in">
-              <MeterCard
-                {...meter}
-                onToggle={handleToggleMeter}
-                onEdit={handleEditMeter}
-                onDelete={handleDeleteMeter}
-                onDeleteReading={handleDeleteReading}
-                onEditReading={handleEditReading}
-              />
-            </div>
-          ))}
-        </div>
+        <MeterList
+          meters={meters}
+          dateRange={dateRange}
+          filterStatus={filterStatus}
+          onToggleMeter={handleToggleMeter}
+          onEditMeter={handleEditMeter}
+          onDeleteMeter={handleDeleteMeter}
+          onDeleteReading={handleDeleteReading}
+          onEditReading={handleEditReading}
+        />
 
         <AddMeterDialog onAddMeter={handleAddMeter} />
       </div>
@@ -242,3 +199,4 @@ const Index = () => {
 };
 
 export default Index;
+
