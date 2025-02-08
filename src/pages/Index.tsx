@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AddMeterDialog } from "@/components/AddMeterDialog";
 import { FilterSection } from "@/components/FilterSection";
@@ -169,6 +168,64 @@ const Index = () => {
     });
   };
 
+  const handleUpdateMeterNotes = async (id: string, notes: string) => {
+    if (useDatabase) {
+      const success = await databaseService.updateMeterNotes(id, notes);
+      if (success) {
+        setMeters(prev => prev.map(meter => 
+          meter.id === id ? { ...meter, notes } : meter
+        ));
+      }
+    } else {
+      setMeters(prev => prev.map(meter => 
+        meter.id === id ? { ...meter, notes } : meter
+      ));
+      localStorage.setItem("meters", JSON.stringify(meters));
+    }
+    toast({
+      title: "Notizen aktualisiert",
+      description: "Die Notizen wurden erfolgreich gespeichert.",
+      duration: 10000,
+    });
+  };
+
+  const handleUpdateReadingNotes = async (meterId: string, date: string, notes: string) => {
+    if (useDatabase) {
+      const success = await databaseService.updateReadingNotes(meterId, date, notes);
+      if (success) {
+        setMeters(prev => prev.map(meter => {
+          if (meter.id === meterId) {
+            return {
+              ...meter,
+              readings: meter.readings.map(reading =>
+                reading.date === date ? { ...reading, notes } : reading
+              )
+            };
+          }
+          return meter;
+        }));
+      }
+    } else {
+      setMeters(prev => prev.map(meter => {
+        if (meter.id === meterId) {
+          return {
+            ...meter,
+            readings: meter.readings.map(reading =>
+              reading.date === date ? { ...reading, notes } : reading
+            )
+          };
+        }
+        return meter;
+      }));
+      localStorage.setItem("meters", JSON.stringify(meters));
+    }
+    toast({
+      title: "Notizen aktualisiert",
+      description: "Die Notizen wurden erfolgreich gespeichert.",
+      duration: 10000,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -190,6 +247,8 @@ const Index = () => {
           onDeleteMeter={handleDeleteMeter}
           onDeleteReading={handleDeleteReading}
           onEditReading={handleEditReading}
+          onUpdateMeterNotes={handleUpdateMeterNotes}
+          onUpdateReadingNotes={handleUpdateReadingNotes}
         />
 
         <AddMeterDialog onAddMeter={handleAddMeter} />
@@ -199,4 +258,3 @@ const Index = () => {
 };
 
 export default Index;
-
