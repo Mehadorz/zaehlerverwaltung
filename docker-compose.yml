@@ -4,7 +4,7 @@ version: '3.8'
 services:
   app:
     build: 
-      context: .
+      context: https://github.com/yourusername/your-repo.git#main  # Hier musst du deine Repository-URL einfügen
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -16,6 +16,7 @@ services:
       - DB_PASSWORD=meter_password
       - DB_NAME=meter_db
       - DB_PORT=3306
+    restart: unless-stopped
 
   db:
     image: mariadb:latest
@@ -27,6 +28,11 @@ services:
       - MYSQL_USER=meter_user
       - MYSQL_PASSWORD=meter_password
     volumes:
-      - ./db/data:/var/lib/mysql
+      - db_data:/var/lib/mysql
       - ./db/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
 
