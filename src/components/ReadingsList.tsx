@@ -6,6 +6,17 @@ import { Pencil, Trash2 } from "lucide-react";
 // Import von date-fns Funktionen für die Datumsformatierung
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Definition der Schnittstelle für einen Zählerstand
 interface Reading {
@@ -56,13 +67,27 @@ export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }:
               >
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onDeleteReading(reading.date)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Zählerstand löschen</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Möchten Sie den Zählerstand vom {formatDate(reading.date)} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDeleteReading(reading.date)}>
+                      Löschen
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         ))}
@@ -70,3 +95,4 @@ export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }:
     </div>
   );
 };
+
