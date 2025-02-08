@@ -7,7 +7,7 @@ services:
       context: https://github.com/yourusername/your-repo.git#main  # Hier musst du deine Repository-URL einfügen
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8080:3000"  # Änderung auf Port 3000, da Vite standardmäßig diesen Port verwendet
     depends_on:
       - db
     environment:
@@ -16,6 +16,9 @@ services:
       - DB_PASSWORD=meter_password
       - DB_NAME=meter_db
       - DB_PORT=3306
+      - VITE_API_URL=http://localhost:8080  # Hinzufügung der API-URL
+    networks:
+      - meter-network
     restart: unless-stopped
 
   db:
@@ -30,9 +33,14 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - meter-network
     restart: unless-stopped
+
+networks:
+  meter-network:
+    driver: bridge
 
 volumes:
   db_data:
     driver: local
-
