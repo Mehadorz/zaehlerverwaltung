@@ -1,4 +1,3 @@
-
 // Import der UI-Komponenten
 import { Button } from "@/components/ui/button";
 // Import der Icons aus der lucide-react Bibliothek
@@ -17,11 +16,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NotesDialog } from "./NotesDialog";
 
 // Definition der Schnittstelle für einen Zählerstand
 interface Reading {
   date: string;
   value: number;
+  notes?: string;
 }
 
 // Definition der Props für die ReadingsList
@@ -30,10 +31,17 @@ interface ReadingsListProps {
   unit: string;
   onEditReading: (date: string, value: number) => void;
   onDeleteReading: (date: string) => void;
+  onUpdateNotes: (date: string, notes: string) => void;
 }
 
 // ReadingsList Komponente: Zeigt eine Liste aller Zählerstände mit Bearbeitungsmöglichkeiten
-export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }: ReadingsListProps) => {
+export const ReadingsList = ({
+  readings,
+  unit,
+  onEditReading,
+  onDeleteReading,
+  onUpdateNotes,
+}: ReadingsListProps) => {
   // Funktion zum Formatieren des Datums
   const formatDate = (date: string) => {
     return format(parse(date, "yyyy-MM-dd", new Date()), "dd.MM.yyyy", { locale: de });
@@ -47,7 +55,9 @@ export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }:
           <div key={reading.date} className="flex items-center justify-between bg-secondary/50 p-2 rounded-md">
             <div className="space-y-1">
               <div className="text-sm">{formatDate(reading.date)}</div>
-              <div className="text-sm font-medium">{reading.value} {unit}</div>
+              <div className="text-sm font-medium">
+                {reading.value} {unit}
+              </div>
               {idx > 0 && (
                 <div className="text-xs text-muted-foreground">
                   Verbrauch: {(reading.value - readings[idx - 1].value).toFixed(2)} {unit}
@@ -67,6 +77,11 @@ export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }:
               >
                 <Pencil className="h-4 w-4" />
               </Button>
+              <NotesDialog
+                title={`Notizen für Zählerstand vom ${formatDate(reading.date)}`}
+                initialNotes={reading.notes}
+                onSave={(notes) => onUpdateNotes(reading.date, notes)}
+              />
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -95,4 +110,3 @@ export const ReadingsList = ({ readings, unit, onEditReading, onDeleteReading }:
     </div>
   );
 };
-

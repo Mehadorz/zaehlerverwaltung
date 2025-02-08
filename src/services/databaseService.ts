@@ -5,6 +5,7 @@ import axios from 'axios';
 interface Reading {
   date: string;
   value: number;
+  notes?: string;
 }
 
 // Schnittstelle für einen Zähler
@@ -13,6 +14,7 @@ interface Meter {
   name: string;
   unit: string;
   isActive: boolean;
+  notes?: string;
   readings: Reading[];
 }
 
@@ -63,6 +65,29 @@ class DatabaseService {
       return false;
     }
   }
+
+  // Füge eine Notiz zu einem Zähler hinzu
+  async updateMeterNotes(id: string, notes: string): Promise<boolean> {
+    try {
+      await axios.patch(`${this.apiUrl}/meters/${id}/notes`, { notes });
+      return true;
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Notizen:', error);
+      return false;
+    }
+  }
+
+  // Füge eine Notiz zu einem Zählerstand hinzu
+  async updateReadingNotes(meterId: string, date: string, notes: string): Promise<boolean> {
+    try {
+      await axios.patch(`${this.apiUrl}/meters/${meterId}/readings/${date}/notes`, { notes });
+      return true;
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Notizen:', error);
+      return false;
+    }
+  }
 }
 
 export const databaseService = new DatabaseService();
+

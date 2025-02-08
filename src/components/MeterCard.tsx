@@ -1,4 +1,3 @@
-
 // Import der UI-Komponenten für das Layout
 import { Card, CardContent } from "@/components/ui/card";
 // Import der Dialog-Komponenten für das Hinzufügen und Bearbeiten von Zählerständen
@@ -19,6 +18,7 @@ interface MeterCardProps {
   id: string;
   name: string;
   unit: string;
+  notes?: string;
   isActive: boolean;
   readings: Reading[];
   onToggle: (id: string, value: boolean) => void;
@@ -26,6 +26,8 @@ interface MeterCardProps {
   onDelete: (id: string) => void;
   onDeleteReading: (meterId: string, date: string) => void;
   onEditReading: (meterId: string, date: string, newValue: number) => void;
+  onUpdateMeterNotes: (id: string, notes: string) => void;
+  onUpdateReadingNotes: (meterId: string, date: string, notes: string) => void;
 }
 
 // MeterCard Komponente: Zeigt alle Informationen und Aktionen für einen Zähler an
@@ -33,6 +35,7 @@ export const MeterCard = ({
   id,
   name,
   unit,
+  notes,
   isActive,
   readings,
   onToggle,
@@ -40,6 +43,8 @@ export const MeterCard = ({
   onDelete,
   onDeleteReading,
   onEditReading,
+  onUpdateMeterNotes,
+  onUpdateReadingNotes,
 }: MeterCardProps) => {
   // Berechnet den Gesamtverbrauch aus allen Zählerständen
   const totalConsumption = readings.reduce((acc, curr, idx) => {
@@ -53,10 +58,12 @@ export const MeterCard = ({
         id={id}
         name={name}
         unit={unit}
+        notes={notes}
         isActive={isActive}
         onToggle={onToggle}
         onEdit={onEdit}
         onDelete={onDelete}
+        onUpdateNotes={onUpdateMeterNotes}
       />
       <CardContent>
         <div className="mt-2 space-y-4">
@@ -78,6 +85,7 @@ export const MeterCard = ({
             unit={unit}
             onEditReading={(date, value) => onEditReading(id, date, value)}
             onDeleteReading={(date) => onDeleteReading(id, date)}
+            onUpdateNotes={(date, notes) => onUpdateReadingNotes(id, date, notes)}
           />
           
           <AddReadingDialog meterId={id} onAddReading={(meterId, value, date) => onEditReading(meterId, date, value)} />

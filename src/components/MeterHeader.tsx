@@ -1,4 +1,3 @@
-
 // Import der UI-Komponenten
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -21,16 +20,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { NotesDialog } from "./NotesDialog";
 
 // Definition der Props für den MeterHeader
 interface MeterHeaderProps {
   id: string;
   name: string;
   unit: string;
+  notes?: string;
   isActive: boolean;
   onToggle: (id: string, value: boolean) => void;
   onEdit: (id: string, name: string, unit: string) => void;
   onDelete: (id: string) => void;
+  onUpdateNotes: (id: string, notes: string) => void;
 }
 
 // MeterHeader Komponente: Zeigt den Header eines Zählers mit Aktions-Buttons
@@ -38,10 +40,12 @@ export const MeterHeader = ({
   id,
   name,
   unit,
+  notes,
   isActive,
   onToggle,
   onEdit,
   onDelete,
+  onUpdateNotes,
 }: MeterHeaderProps) => {
   // State für den Dialog zum Bearbeiten des Zählers
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -60,6 +64,11 @@ export const MeterHeader = ({
       <CardTitle className="text-xl font-semibold">{name}</CardTitle>
       <div className="flex items-center space-x-2">
         <Switch checked={isActive} onCheckedChange={(checked) => onToggle(id, checked)} />
+        <NotesDialog
+          title="Zähler Notizen"
+          initialNotes={notes}
+          onSave={(notes) => onUpdateNotes(id, notes)}
+        />
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -106,4 +115,3 @@ export const MeterHeader = ({
     </CardHeader>
   );
 };
-
