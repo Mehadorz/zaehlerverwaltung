@@ -22,6 +22,17 @@ interface Meter {
 class DatabaseService {
   private apiUrl = 'http://localhost:3000/api'; // URL des Backend-Services
 
+  // Prüfe die Datenbankverbindung
+  async testConnection(): Promise<boolean> {
+    try {
+      await axios.get(`${this.apiUrl}/health`);
+      return true;
+    } catch (error) {
+      console.error('Datenbank-Verbindungsfehler:', error);
+      return false;
+    }
+  }
+
   // Hole alle Zähler aus der Datenbank
   async getAllMeters(): Promise<Meter[]> {
     try {

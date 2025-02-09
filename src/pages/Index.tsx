@@ -37,23 +37,49 @@ const Index = () => {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const { toast } = useToast();
 
+  // Lade die gespeicherte Storage-Präferenz beim Start
+  useEffect(() => {
+    const savedPreference = localStorage.getItem("storagePreference");
+    if (savedPreference) {
+      setUseDatabase(JSON.parse(savedPreference));
+    }
+  }, []);
+
   // Lade Zähler beim Start und bei Änderung der Speichermethode
   useEffect(() => {
     const loadMeters = async () => {
-      if (useDatabase) {
-        const dbMeters = await databaseService.getAllMeters();
-        setMeters(dbMeters);
-      } else {
-        const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
-        setMeters(localMeters);
+      try {
+        if (useDatabase) {
+          const dbMeters = await databaseService.getAllMeters();
+          setMeters(dbMeters);
+        } else {
+          const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
+          setMeters(localMeters);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Zähler:', error);
+        toast({
+          title: "Fehler beim Laden",
+          description: "Die Zähler konnten nicht geladen werden.",
+          variant: "destructive",
+          duration: 5000,
+        });
       }
     };
     loadMeters();
   }, [useDatabase]);
 
+  // Synchronisiere Änderungen mit der ausgewählten Speichermethode
+  useEffect(() => {
+    if (!useDatabase) {
+      localStorage.setItem("meters", JSON.stringify(meters));
+    }
+  }, [meters, useDatabase]);
+
   // Event Handler
   const handleStorageChange = (useDb: boolean) => {
     setUseDatabase(useDb);
+    localStorage.setItem("storagePreference", JSON.stringify(useDb));
   };
 
   const handleAddMeter = async (name: string, unit: string) => {
