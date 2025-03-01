@@ -18,17 +18,73 @@ interface Meter {
   readings: Reading[];
 }
 
+// Schnittstelle für Datenbank-Konfiguration
+export interface DbConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+}
+
 // Service-Klasse für Datenbankoperationen
 class DatabaseService {
-  private apiUrl = 'http://localhost:3000/api'; // URL des Backend-Services
+  private apiUrl = 'http://localhost:3000/api'; // Standard-URL des Backend-Services
+  private lastError: string | null = null;
+
+  // Setze Konfiguration für die Datenbankverbindung
+  setConfig(config: DbConfig) {
+    this.apiUrl = `http://${config.host}:${config.port}/api`;
+    // Speichere Konfiguration im localStorage
+    localStorage.setItem('dbConfig', JSON.stringify(config));
+    console.log('Datenbank-Konfiguration aktualisiert:', this.apiUrl);
+  }
+
+  // Lade gespeicherte Konfiguration
+  loadConfig(): DbConfig | null {
+    const saved = localStorage.getItem('dbConfig');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return null;
+  }
+
+  // Liefere den letzten Fehler
+  getLastError(): string | null {
+    return this.lastError;
+  }
 
   // Prüfe die Datenbankverbindung
   async testConnection(): Promise<boolean> {
     try {
-      await axios.get(`${this.apiUrl}/health`);
+      console.log('Teste Verbindung zu:', this.apiUrl);
+      this.lastError = null;
+      const response = await axios.get(`${this.apiUrl}/health`, { timeout: 5000 });
+      
+      if (response.status !== 200) {
+        this.lastError = `Server-Fehler: ${response.status} ${response.statusText}`;
+        return false;
+      }
+      
       return true;
     } catch (error) {
-      console.error('Datenbank-Verbindungsfehler:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+          this.lastError = `Verbindung verweigert: Der Server unter ${this.apiUrl} ist nicht erreichbar. Bitte überprüfen Sie, ob der Server läuft und die Adresse korrekt ist.`;
+        } else if (error.response) {
+          this.lastError = `HTTP Fehler ${error.response.status}: ${error.response.statusText}`;
+        } else if (error.request) {
+          this.lastError = `Keine Antwort vom Server: ${error.message}`;
+        } else {
+          this.lastError = `Verbindungsfehler: ${error.message}`;
+        }
+      } else if (error instanceof Error) {
+        this.lastError = `Fehler: ${error.message}`;
+      } else {
+        this.lastError = 'Unbekannter Verbindungsfehler';
+      }
+      
+      console.error('Datenbank-Verbindungsfehler:', this.lastError);
       return false;
     }
   }
@@ -36,10 +92,11 @@ class DatabaseService {
   // Hole alle Zähler aus der Datenbank
   async getAllMeters(): Promise<Meter[]> {
     try {
+      this.lastError = null;
       const response = await axios.get(`${this.apiUrl}/meters`);
       return response.data;
     } catch (error) {
-      console.error('Fehler beim Laden der Zähler:', error);
+      this.handleError('Fehler beim Laden der Zähler', error);
       return [];
     }
   }
@@ -47,10 +104,11 @@ class DatabaseService {
   // Füge einen neuen Zähler hinzu
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
+      this.lastError = null;
       const response = await axios.post(`${this.apiUrl}/meters`, meter);
       return response.data;
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Zählers:', error);
+      this.handleError('Fehler beim Hinzufügen des Zählers', error);
       return null;
     }
   }
@@ -58,10 +116,11 @@ class DatabaseService {
   // Aktualisiere einen Zähler
   async updateMeter(meter: Meter): Promise<boolean> {
     try {
+      this.lastError = null;
       await axios.put(`${this.apiUrl}/meters/${meter.id}`, meter);
       return true;
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Zählers:', error);
+      this.handleError('Fehler beim Aktualisieren des Zählers', error);
       return false;
     }
   }
@@ -69,10 +128,11 @@ class DatabaseService {
   // Lösche einen Zähler
   async deleteMeter(id: string): Promise<boolean> {
     try {
+      this.lastError = null;
       await axios.delete(`${this.apiUrl}/meters/${id}`);
       return true;
     } catch (error) {
-      console.error('Fehler beim Löschen des Zählers:', error);
+      this.handleError('Fehler beim Löschen des Zählers', error);
       return false;
     }
   }
@@ -80,10 +140,11 @@ class DatabaseService {
   // Füge eine Notiz zu einem Zähler hinzu
   async updateMeterNotes(id: string, notes: string): Promise<boolean> {
     try {
+      this.lastError = null;
       await axios.patch(`${this.apiUrl}/meters/${id}/notes`, { notes });
       return true;
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Notizen:', error);
+      this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
     }
   }
@@ -91,14 +152,34 @@ class DatabaseService {
   // Füge eine Notiz zu einem Zählerstand hinzu
   async updateReadingNotes(meterId: string, date: string, notes: string): Promise<boolean> {
     try {
+      this.lastError = null;
       await axios.patch(`${this.apiUrl}/meters/${meterId}/readings/${date}/notes`, { notes });
       return true;
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Notizen:', error);
+      this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
     }
+  }
+
+  // Fehlerbehandlung für alle Methoden
+  private handleError(message: string, error: unknown): void {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        this.lastError = `Verbindung verweigert: Der Server ist nicht erreichbar.`;
+      } else if (error.response) {
+        this.lastError = `HTTP Fehler ${error.response.status}: ${error.response.statusText}`;
+      } else if (error.request) {
+        this.lastError = `Keine Antwort vom Server: ${error.message}`;
+      } else {
+        this.lastError = `Verbindungsfehler: ${error.message}`;
+      }
+    } else if (error instanceof Error) {
+      this.lastError = `${message}: ${error.message}`;
+    } else {
+      this.lastError = `${message}: Unbekannter Fehler`;
+    }
+    console.error(message, error);
   }
 }
 
 export const databaseService = new DatabaseService();
-
