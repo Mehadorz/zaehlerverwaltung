@@ -29,19 +29,19 @@ export interface DbConfig {
 
 // Service-Klasse für Datenbankoperationen
 class DatabaseService {
-  private apiUrl: string = 'http://localhost:3000/api'; // Standard-URL des Backend-Services
+  private dbUrl: string = 'http://localhost:3000'; // Standard-URL des Datenbankservers
   private lastError: string | null = null;
 
   // Setze Konfiguration für die Datenbankverbindung
   setConfig(config: DbConfig) {
-    // Erstelle die API-URL basierend auf den Konfigurationsdaten
-    this.apiUrl = `http://${config.host}:${config.port}/api`;
+    // Erstelle die Datenbank-URL basierend auf den Konfigurationsdaten
+    this.dbUrl = `http://${config.host}:${config.port}`;
     
     // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
     
     console.log('Datenbank-Konfiguration aktualisiert:', {
-      apiUrl: this.apiUrl,
+      dbUrl: this.dbUrl,
       host: config.host,
       port: config.port,
       database: config.database
@@ -65,11 +65,11 @@ class DatabaseService {
   // Prüfe die Datenbankverbindung
   async testConnection(): Promise<boolean> {
     try {
-      console.log('Teste Verbindung zu:', this.apiUrl);
+      console.log('Teste Verbindung zu:', this.dbUrl);
       this.lastError = null;
       
       // Health-Check Endpunkt aufrufen, um die Verbindung zu testen
-      const response = await axios.get(`${this.apiUrl}/health`, { 
+      const response = await axios.get(`${this.dbUrl}/health`, { 
         timeout: 5000 // Timeout nach 5 Sekunden
       });
       
@@ -85,7 +85,7 @@ class DatabaseService {
       // Detaillierte Fehlerbehandlung
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-          this.lastError = `Verbindung verweigert: Der Server unter ${this.apiUrl} ist nicht erreichbar. Bitte überprüfen Sie, ob der Server läuft und die Adresse korrekt ist.`;
+          this.lastError = `Verbindung verweigert: Der Server unter ${this.dbUrl} ist nicht erreichbar. Bitte überprüfen Sie, ob der Server läuft und die Adresse korrekt ist.`;
         } else if (error.response) {
           this.lastError = `HTTP Fehler ${error.response.status}: ${error.response.statusText}`;
         } else if (error.request) {
@@ -108,7 +108,7 @@ class DatabaseService {
   async getAllMeters(): Promise<Meter[]> {
     try {
       this.lastError = null;
-      const response = await axios.get(`${this.apiUrl}/meters`);
+      const response = await axios.get(`${this.dbUrl}/meters`);
       return response.data;
     } catch (error) {
       this.handleError('Fehler beim Laden der Zähler', error);
@@ -120,7 +120,7 @@ class DatabaseService {
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
       this.lastError = null;
-      const response = await axios.post(`${this.apiUrl}/meters`, meter);
+      const response = await axios.post(`${this.dbUrl}/meters`, meter);
       return response.data;
     } catch (error) {
       this.handleError('Fehler beim Hinzufügen des Zählers', error);
@@ -132,7 +132,7 @@ class DatabaseService {
   async updateMeter(meter: Meter): Promise<boolean> {
     try {
       this.lastError = null;
-      await axios.put(`${this.apiUrl}/meters/${meter.id}`, meter);
+      await axios.put(`${this.dbUrl}/meters/${meter.id}`, meter);
       return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren des Zählers', error);
@@ -144,7 +144,7 @@ class DatabaseService {
   async deleteMeter(id: string): Promise<boolean> {
     try {
       this.lastError = null;
-      await axios.delete(`${this.apiUrl}/meters/${id}`);
+      await axios.delete(`${this.dbUrl}/meters/${id}`);
       return true;
     } catch (error) {
       this.handleError('Fehler beim Löschen des Zählers', error);
@@ -156,7 +156,7 @@ class DatabaseService {
   async updateMeterNotes(id: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
-      await axios.patch(`${this.apiUrl}/meters/${id}/notes`, { notes });
+      await axios.patch(`${this.dbUrl}/meters/${id}/notes`, { notes });
       return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
@@ -168,7 +168,7 @@ class DatabaseService {
   async updateReadingNotes(meterId: string, date: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
-      await axios.patch(`${this.apiUrl}/meters/${meterId}/readings/${date}/notes`, { notes });
+      await axios.patch(`${this.dbUrl}/meters/${meterId}/readings/${date}/notes`, { notes });
       return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
