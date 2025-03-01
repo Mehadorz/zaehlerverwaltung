@@ -1,19 +1,7 @@
 
 import { MeterCard } from "@/components/MeterCard";
 import { isWithinInterval, parseISO } from "date-fns";
-
-interface Reading {
-  date: string;
-  value: number;
-}
-
-interface Meter {
-  id: string;
-  name: string;
-  unit: string;
-  isActive: boolean;
-  readings: Reading[];
-}
+import { Meter, FilterStatus } from "@/hooks/useMeterData";
 
 interface MeterListProps {
   meters: Meter[];
@@ -21,7 +9,7 @@ interface MeterListProps {
     from: Date;
     to: Date;
   };
-  filterStatus: "all" | "active" | "inactive";
+  filterStatus: FilterStatus;
   onToggleMeter: (id: string, isActive: boolean) => void;
   onEditMeter: (id: string, name: string, unit: string) => void;
   onDeleteMeter: (id: string) => void;

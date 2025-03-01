@@ -1,3 +1,4 @@
+
 // Import der UI-Komponenten für das Layout
 import { Card, CardContent } from "@/components/ui/card";
 // Import der Dialog-Komponenten für das Hinzufügen und Bearbeiten von Zählerständen
@@ -6,12 +7,7 @@ import { MeterHeader } from "./MeterHeader";
 // Import der Komponenten für die Darstellung der Verbrauchsdaten
 import { ConsumptionChart } from "./ConsumptionChart";
 import { ReadingsList } from "./ReadingsList";
-
-// Definition der Schnittstelle für einen Zählerstand
-interface Reading {
-  date: string;
-  value: number;
-}
+import { Reading } from "@/hooks/useMeterData";
 
 // Definition der Props für die MeterCard
 interface MeterCardProps {

@@ -1,3 +1,4 @@
+
 // Import der UI-Komponenten
 import { Button } from "@/components/ui/button";
 // Import der Icons aus der lucide-react Bibliothek
@@ -17,13 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { NotesDialog } from "./NotesDialog";
-
-// Definition der Schnittstelle für einen Zählerstand
-interface Reading {
-  date: string;
-  value: number;
-  notes?: string;
-}
+import { Reading } from "@/hooks/useMeterData";
 
 // Definition der Props für die ReadingsList
 interface ReadingsListProps {
