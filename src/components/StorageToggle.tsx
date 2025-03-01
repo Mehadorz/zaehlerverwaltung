@@ -21,11 +21,13 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
 
   // Lade die gespeicherte Einstellung beim Start
   useEffect(() => {
+    // Lade die gespeicherte Speichereinstellung
     const savedPreference = localStorage.getItem("storagePreference");
     if (savedPreference) {
       const shouldUseDatabase = JSON.parse(savedPreference);
       setUseDatabase(shouldUseDatabase);
       
+      // Wenn Datenbank ausgewählt wurde, Verbindung prüfen
       if (shouldUseDatabase) {
         checkDatabaseConnection();
       }

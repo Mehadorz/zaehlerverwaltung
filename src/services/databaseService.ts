@@ -29,18 +29,26 @@ export interface DbConfig {
 
 // Service-Klasse für Datenbankoperationen
 class DatabaseService {
-  private apiUrl = 'http://localhost:3000/api'; // Standard-URL des Backend-Services
+  private apiUrl: string = 'http://localhost:3000/api'; // Standard-URL des Backend-Services
   private lastError: string | null = null;
 
   // Setze Konfiguration für die Datenbankverbindung
   setConfig(config: DbConfig) {
+    // Erstelle die API-URL basierend auf den Konfigurationsdaten
     this.apiUrl = `http://${config.host}:${config.port}/api`;
-    // Speichere Konfiguration im localStorage
+    
+    // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
-    console.log('Datenbank-Konfiguration aktualisiert:', this.apiUrl);
+    
+    console.log('Datenbank-Konfiguration aktualisiert:', {
+      apiUrl: this.apiUrl,
+      host: config.host,
+      port: config.port,
+      database: config.database
+    });
   }
 
-  // Lade gespeicherte Konfiguration
+  // Lade gespeicherte Konfiguration aus dem localStorage
   loadConfig(): DbConfig | null {
     const saved = localStorage.getItem('dbConfig');
     if (saved) {
@@ -49,7 +57,7 @@ class DatabaseService {
     return null;
   }
 
-  // Liefere den letzten Fehler
+  // Liefere den letzten Fehler zurück
   getLastError(): string | null {
     return this.lastError;
   }
@@ -59,15 +67,22 @@ class DatabaseService {
     try {
       console.log('Teste Verbindung zu:', this.apiUrl);
       this.lastError = null;
-      const response = await axios.get(`${this.apiUrl}/health`, { timeout: 5000 });
+      
+      // Health-Check Endpunkt aufrufen, um die Verbindung zu testen
+      const response = await axios.get(`${this.apiUrl}/health`, { 
+        timeout: 5000 // Timeout nach 5 Sekunden
+      });
       
       if (response.status !== 200) {
         this.lastError = `Server-Fehler: ${response.status} ${response.statusText}`;
+        console.error('Verbindungstest fehlgeschlagen:', this.lastError);
         return false;
       }
       
+      console.log('Verbindungstest erfolgreich:', response.data);
       return true;
     } catch (error) {
+      // Detaillierte Fehlerbehandlung
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
           this.lastError = `Verbindung verweigert: Der Server unter ${this.apiUrl} ist nicht erreichbar. Bitte überprüfen Sie, ob der Server läuft und die Adresse korrekt ist.`;
