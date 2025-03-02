@@ -42,7 +42,11 @@ const Index = () => {
     // Simuliere Ladevorgang und fange mögliche Fehler ab
     try {
       console.log("Anwendung wird geladen...");
-      setLoading(false);
+      // Kurze Verzögerung, um zu sehen ob alles korrekt initialisiert wird
+      setTimeout(() => {
+        setLoading(false);
+        console.log("Anwendung erfolgreich geladen");
+      }, 1000);
     } catch (err) {
       console.error("Fehler beim Laden der Anwendung:", err);
       setError("Die Anwendung konnte nicht geladen werden. Bitte versuchen Sie es später erneut.");
@@ -78,6 +82,8 @@ const Index = () => {
       </div>
     );
   }
+
+  console.log("Rendering Index component with meters:", meters);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">

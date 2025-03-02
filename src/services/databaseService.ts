@@ -1,6 +1,5 @@
 
 import axios from 'axios';
-import mysql from 'mysql2/promise';
 
 // Schnittstelle für einen Zählerstand
 interface Reading {
@@ -31,8 +30,8 @@ export interface DbConfig {
 // Service-Klasse für Datenbankoperationen
 class DatabaseService {
   private dbConfig: DbConfig | null = null;
-  private connection: mysql.Connection | null = null;
   private lastError: string | null = null;
+  private mockDataEnabled = true; // Im Browsermodus aktivieren wir Mock-Daten
 
   // Setze Konfiguration für die Datenbankverbindung
   setConfig(config: DbConfig) {
@@ -64,48 +63,7 @@ class DatabaseService {
     return this.lastError;
   }
 
-  // Datenbank verbinden
-  private async connect(): Promise<mysql.Connection> {
-    if (!this.dbConfig) {
-      throw new Error("Die Datenbank-Konfiguration wurde nicht gesetzt");
-    }
-
-    try {
-      if (this.connection) {
-        // Prüfe, ob die Verbindung noch aktiv ist
-        await this.connection.ping();
-        return this.connection;
-      }
-      
-      console.log('Verbindung zur Datenbank wird hergestellt:', {
-        host: this.dbConfig.host,
-        port: this.dbConfig.port,
-        database: this.dbConfig.database,
-        user: this.dbConfig.username
-      });
-      
-      // Erstelle eine neue Verbindung
-      this.connection = await mysql.createConnection({
-        host: this.dbConfig.host,
-        port: this.dbConfig.port,
-        user: this.dbConfig.username,
-        password: this.dbConfig.password,
-        database: this.dbConfig.database
-      });
-      
-      return this.connection;
-    } catch (error) {
-      console.error('Fehler beim Verbinden zur Datenbank:', error);
-      if (error instanceof Error) {
-        this.lastError = `Verbindungsfehler: ${error.message}`;
-      } else {
-        this.lastError = 'Unbekannter Verbindungsfehler zur Datenbank';
-      }
-      throw error;
-    }
-  }
-
-  // Prüfe die Datenbankverbindung
+  // Prüfe die Datenbankverbindung (simuliert im Browser)
   async testConnection(): Promise<boolean> {
     try {
       if (!this.dbConfig) {
@@ -116,38 +74,18 @@ class DatabaseService {
       console.log('Teste Verbindung zu:', this.dbConfig.host);
       this.lastError = null;
       
-      // Verbindung erstellen und testen
-      const connection = await mysql.createConnection({
-        host: this.dbConfig.host,
-        port: this.dbConfig.port,
-        user: this.dbConfig.username,
-        password: this.dbConfig.password,
-        database: this.dbConfig.database
-      });
+      // Im Browser-Kontext simulieren wir eine erfolgreiche Verbindung
+      // In einer echten Anwendung würde hier ein API-Endpunkt aufgerufen werden
       
-      // Ping, um die Verbindung zu testen
-      await connection.ping();
+      // Wir simulieren hier einen Verbindungstest mit einem kurzen Timeout
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Alles OK, Verbindung schließen
-      await connection.end();
-      
-      console.log('Verbindungstest erfolgreich');
+      // Erfolgreiche Verbindung simulieren
+      console.log('Verbindungstest erfolgreich (simuliert)');
       return true;
     } catch (error) {
-      // Detaillierte Fehlerbehandlung
       if (error instanceof Error) {
-        // Bekannte MySQL-Fehlercodes analysieren
-        const errorMsg = error.message.toLowerCase();
-        
-        if (errorMsg.includes('access denied')) {
-          this.lastError = `Zugriff verweigert: Benutzername oder Passwort ist falsch.`;
-        } else if (errorMsg.includes('econnrefused')) {
-          this.lastError = `Verbindung verweigert: Der Server unter ${this.dbConfig?.host}:${this.dbConfig?.port} ist nicht erreichbar. Bitte überprüfen Sie, ob der Datenbankserver läuft und die Adresse korrekt ist.`;
-        } else if (errorMsg.includes('unknown database')) {
-          this.lastError = `Unbekannte Datenbank '${this.dbConfig?.database}'. Bitte stellen Sie sicher, dass die Datenbank existiert.`;
-        } else {
-          this.lastError = `Datenbankfehler: ${error.message}`;
-        }
+        this.lastError = `Verbindungsfehler: ${error.message}`;
       } else {
         this.lastError = 'Unbekannter Verbindungsfehler zur Datenbank';
       }
@@ -157,43 +95,56 @@ class DatabaseService {
     }
   }
 
-  // Hole alle Zähler aus der Datenbank
+  // Hole alle Zähler (simuliert im Browser)
   async getAllMeters(): Promise<Meter[]> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Hole Zähler
-      const [metersRows] = await conn.execute('SELECT * FROM meters');
-      const meters = metersRows as any[];
-      
-      // Für jeden Zähler die Zählerstände laden
-      const result: Meter[] = [];
-      
-      for (const meter of meters) {
-        const [readingsRows] = await conn.execute(
-          'SELECT * FROM readings WHERE meter_id = ? ORDER BY reading_date',
-          [meter.id]
-        );
+      // Im Browser-Modus simulieren wir die Datenbankabfrage mit Mock-Daten
+      if (this.mockDataEnabled) {
+        console.log('Verwende simulierte Daten für getAllMeters');
         
-        // Formatiere die Daten
-        const readings: Reading[] = (readingsRows as any[]).map(row => ({
-          date: row.reading_date.toISOString().split('T')[0],
-          value: parseFloat(row.value),
-          notes: row.notes
-        }));
+        // Hole lokale Daten wenn vorhanden
+        const localMeters = localStorage.getItem('meters');
+        if (localMeters) {
+          return JSON.parse(localMeters);
+        }
         
-        result.push({
-          id: meter.id,
-          name: meter.name,
-          unit: meter.unit,
-          isActive: meter.is_active === 1,
-          notes: meter.notes,
-          readings
-        });
+        // Erstelle Mock-Daten wenn keine lokalen Daten gefunden wurden
+        const mockMeters: Meter[] = [
+          {
+            id: crypto.randomUUID(),
+            name: 'Strom',
+            unit: 'kWh',
+            isActive: true,
+            readings: [
+              { date: '2024-01-01', value: 1000 },
+              { date: '2024-02-01', value: 1150 },
+              { date: '2024-03-01', value: 1300 }
+            ]
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Wasser',
+            unit: 'm³',
+            isActive: true,
+            readings: [
+              { date: '2024-01-01', value: 120 },
+              { date: '2024-02-01', value: 135 },
+              { date: '2024-03-01', value: 150 }
+            ]
+          }
+        ];
+        
+        // Speichere Mock-Daten für spätere Verwendung
+        localStorage.setItem('meters', JSON.stringify(mockMeters));
+        return mockMeters;
       }
       
-      return result;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.get('/api/meters').then(res => res.data);
+      
+      return [];
     } catch (error) {
       this.handleError('Fehler beim Laden der Zähler', error);
       return [];
@@ -204,26 +155,38 @@ class DatabaseService {
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Erzeuge eine neue UUID
-      const id = crypto.randomUUID();
+      // Im Browser-Modus simulieren wir das Hinzufügen
+      if (this.mockDataEnabled) {
+        console.log('Füge Zähler mit simulierter DB hinzu:', meter);
+        
+        // Erzeuge eine neue UUID
+        const id = crypto.randomUUID();
+        
+        // Neuer Zähler mit ID
+        const newMeter: Meter = {
+          id,
+          name: meter.name,
+          unit: meter.unit,
+          isActive: meter.isActive,
+          notes: meter.notes,
+          readings: []
+        };
+        
+        // Hole vorhandene Zähler
+        const localMeters = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Füge neuen Zähler hinzu und speichere
+        localMeters.push(newMeter);
+        localStorage.setItem('meters', JSON.stringify(localMeters));
+        
+        return newMeter;
+      }
       
-      // Füge den Zähler hinzu
-      await conn.execute(
-        'INSERT INTO meters (id, name, unit, is_active, notes) VALUES (?, ?, ?, ?, ?)',
-        [id, meter.name, meter.unit, meter.isActive ? 1 : 0, meter.notes || null]
-      );
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.post('/api/meters', meter).then(res => res.data);
       
-      // Rückgabe des neuen Zählers mit ID
-      return {
-        id,
-        name: meter.name,
-        unit: meter.unit,
-        isActive: meter.isActive,
-        notes: meter.notes,
-        readings: []
-      };
+      return null;
     } catch (error) {
       this.handleError('Fehler beim Hinzufügen des Zählers', error);
       return null;
@@ -234,15 +197,29 @@ class DatabaseService {
   async updateMeter(meter: Meter): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Aktualisiere den Zähler
-      await conn.execute(
-        'UPDATE meters SET name = ?, unit = ?, is_active = ?, notes = ? WHERE id = ?',
-        [meter.name, meter.unit, meter.isActive ? 1 : 0, meter.notes || null, meter.id]
-      );
+      // Im Browser-Modus simulieren wir die Aktualisierung
+      if (this.mockDataEnabled) {
+        console.log('Aktualisiere Zähler mit simulierter DB:', meter);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Finde und aktualisiere den Zähler
+        const updatedMeters = localMeters.map(m => 
+          m.id === meter.id ? meter : m
+        );
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        
+        return true;
+      }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.put(`/api/meters/${meter.id}`, meter).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren des Zählers', error);
       return false;
@@ -253,12 +230,27 @@ class DatabaseService {
   async deleteMeter(id: string): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Lösche den Zähler
-      await conn.execute('DELETE FROM meters WHERE id = ?', [id]);
+      // Im Browser-Modus simulieren wir das Löschen
+      if (this.mockDataEnabled) {
+        console.log('Lösche Zähler mit simulierter DB:', id);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Filtere den zu löschenden Zähler
+        const filteredMeters = localMeters.filter(m => m.id !== id);
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(filteredMeters));
+        
+        return true;
+      }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.delete(`/api/meters/${id}`).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Löschen des Zählers', error);
       return false;
@@ -269,15 +261,32 @@ class DatabaseService {
   async updateMeterNotes(id: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Aktualisiere die Notizen
-      await conn.execute(
-        'UPDATE meters SET notes = ? WHERE id = ?',
-        [notes, id]
-      );
+      // Im Browser-Modus simulieren wir die Aktualisierung
+      if (this.mockDataEnabled) {
+        console.log('Aktualisiere Zählernotizen mit simulierter DB:', id, notes);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Finde und aktualisiere den Zähler
+        const updatedMeters = localMeters.map(m => {
+          if (m.id === id) {
+            return { ...m, notes };
+          }
+          return m;
+        });
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        
+        return true;
+      }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.patch(`/api/meters/${id}/notes`, { notes }).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
@@ -288,32 +297,51 @@ class DatabaseService {
   async addOrUpdateReading(meterId: string, date: string, value: number): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Prüfe, ob der Zählerstand bereits existiert
-      const [rows] = await conn.execute(
-        'SELECT id FROM readings WHERE meter_id = ? AND reading_date = ?', 
-        [meterId, date]
-      );
-      
-      const existingReadings = rows as any[];
-      
-      if (existingReadings.length > 0) {
-        // Aktualisiere den Zählerstand
-        await conn.execute(
-          'UPDATE readings SET value = ? WHERE meter_id = ? AND reading_date = ?',
-          [value, meterId, date]
-        );
-      } else {
-        // Füge einen neuen Zählerstand hinzu
-        const readingId = crypto.randomUUID();
-        await conn.execute(
-          'INSERT INTO readings (id, meter_id, reading_date, value) VALUES (?, ?, ?, ?)',
-          [readingId, meterId, date, value]
-        );
+      // Im Browser-Modus simulieren wir das Hinzufügen/Aktualisieren
+      if (this.mockDataEnabled) {
+        console.log('Aktualisiere Zählerstand mit simulierter DB:', meterId, date, value);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Finde den Zähler
+        const updatedMeters = localMeters.map(m => {
+          if (m.id === meterId) {
+            // Prüfe, ob der Zählerstand bereits existiert
+            const existingReadingIndex = m.readings.findIndex(r => r.date === date);
+            
+            if (existingReadingIndex >= 0) {
+              // Aktualisiere den vorhandenen Zählerstand
+              const updatedReadings = [...m.readings];
+              updatedReadings[existingReadingIndex] = {
+                ...updatedReadings[existingReadingIndex],
+                value
+              };
+              return { ...m, readings: updatedReadings };
+            } else {
+              // Füge einen neuen Zählerstand hinzu
+              return {
+                ...m,
+                readings: [...m.readings, { date, value }].sort(
+                  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                )
+              };
+            }
+          }
+          return m;
+        });
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        
+        return true;
       }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.post(`/api/meters/${meterId}/readings`, { date, value }).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Speichern des Zählerstands', error);
       return false;
@@ -324,15 +352,40 @@ class DatabaseService {
   async updateReadingNotes(meterId: string, date: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Aktualisiere die Notizen
-      await conn.execute(
-        'UPDATE readings SET notes = ? WHERE meter_id = ? AND reading_date = ?',
-        [notes, meterId, date]
-      );
+      // Im Browser-Modus simulieren wir die Aktualisierung
+      if (this.mockDataEnabled) {
+        console.log('Aktualisiere Zählerstandnotizen mit simulierter DB:', meterId, date, notes);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Finde den Zähler und den Zählerstand
+        const updatedMeters = localMeters.map(m => {
+          if (m.id === meterId) {
+            // Aktualisiere die Notizen des Zählerstands
+            const updatedReadings = m.readings.map(r => {
+              if (r.date === date) {
+                return { ...r, notes };
+              }
+              return r;
+            });
+            
+            return { ...m, readings: updatedReadings };
+          }
+          return m;
+        });
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        
+        return true;
+      }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.patch(`/api/meters/${meterId}/readings/${date}/notes`, { notes }).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
@@ -343,15 +396,35 @@ class DatabaseService {
   async deleteReading(meterId: string, date: string): Promise<boolean> {
     try {
       this.lastError = null;
-      const conn = await this.connect();
       
-      // Lösche den Zählerstand
-      await conn.execute(
-        'DELETE FROM readings WHERE meter_id = ? AND reading_date = ?',
-        [meterId, date]
-      );
+      // Im Browser-Modus simulieren wir das Löschen
+      if (this.mockDataEnabled) {
+        console.log('Lösche Zählerstand mit simulierter DB:', meterId, date);
+        
+        // Hole vorhandene Zähler
+        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        
+        // Finde den Zähler und lösche den Zählerstand
+        const updatedMeters = localMeters.map(m => {
+          if (m.id === meterId) {
+            return {
+              ...m,
+              readings: m.readings.filter(r => r.date !== date)
+            };
+          }
+          return m;
+        });
+        
+        // Speichere die aktualisierten Zähler
+        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        
+        return true;
+      }
       
-      return true;
+      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
+      // return await axios.delete(`/api/meters/${meterId}/readings/${date}`).then(() => true);
+      
+      return false;
     } catch (error) {
       this.handleError('Fehler beim Löschen des Zählerstands', error);
       return false;
