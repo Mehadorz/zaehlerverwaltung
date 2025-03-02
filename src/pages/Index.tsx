@@ -7,12 +7,16 @@ import { MeterList } from "@/components/MeterList";
 import { useMeterData } from "@/hooks/useMeterData";
 import { createMeterActions } from "@/actions/meterActions";
 
-// Hauptkomponente für die Zählerverwaltung
+/**
+ * Hauptkomponente für die Zählerverwaltung
+ * Diese Komponente orchestriert die gesamte Anwendung und verwaltet den Zustand
+ */
 const Index = () => {
+  // Zustandsvariablen für Lade- und Fehlerzustände
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Hole State und Aktionen aus den Custom Hooks
+  // Hole Zustand und Aktionen aus den Custom Hooks
   const {
     meters,
     setMeters,
@@ -25,7 +29,7 @@ const Index = () => {
     toast
   } = useMeterData();
 
-  // Erstelle die Aktionen für die Zählerverwaltung
+  // Erstelle die Aktionen für die Zählerverwaltung mit einer Factory-Funktion
   const {
     handleStorageChange,
     handleAddMeter,
@@ -38,11 +42,13 @@ const Index = () => {
     handleUpdateReadingNotes
   } = createMeterActions(meters, setMeters, useDatabase, toast);
 
+  // Effekt zum Initialisieren der Anwendung
   useEffect(() => {
-    // Simuliere Ladevorgang und fange mögliche Fehler ab
     try {
       console.log("Anwendung wird geladen...");
+      
       // Kurze Verzögerung, um zu sehen ob alles korrekt initialisiert wird
+      // Dies hilft bei der Fehlerdiagnose in der Produktionsumgebung
       setTimeout(() => {
         setLoading(false);
         console.log("Anwendung erfolgreich geladen");
@@ -54,7 +60,9 @@ const Index = () => {
     }
   }, []);
 
-  // Zeige Lade- oder Fehleranzeige
+  // Rendering-Logik für verschiedene Anwendungszustände
+  
+  // Zeige Ladeanimation während der Initialisierung
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -66,6 +74,7 @@ const Index = () => {
     );
   }
 
+  // Zeige Fehleranzeige bei Problemen
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -85,13 +94,16 @@ const Index = () => {
 
   console.log("Rendering Index component with meters:", meters);
 
+  // Hauptlayout der Anwendung
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header mit Datenbank-Toggle */}
         <HeaderSection onStorageChange={(useDb) => {
           setUseDatabase(handleStorageChange(useDb));
         }} />
         
+        {/* Filtersektion für Datum und Status */}
         <FilterSection
           dateRange={dateRange}
           filterStatus={filterStatus}
@@ -99,6 +111,7 @@ const Index = () => {
           onFilterStatusChange={setFilterStatus}
         />
         
+        {/* Zählerliste mit allen notwendigen Event-Handlern */}
         <MeterList
           meters={meters}
           dateRange={dateRange}
@@ -112,6 +125,7 @@ const Index = () => {
           onUpdateReadingNotes={handleUpdateReadingNotes}
         />
 
+        {/* Dialog zum Hinzufügen neuer Zähler */}
         <AddMeterDialog onAddMeter={handleAddMeter} />
       </div>
     </div>
