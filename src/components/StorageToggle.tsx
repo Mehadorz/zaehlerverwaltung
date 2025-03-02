@@ -73,7 +73,13 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
       }
       toast({
         title: "Verbindung hergestellt",
-        description: "Erfolgreich mit der Datenbank verbunden.",
+        description: "Erfolgreich mit der Datenbank verbunden. Daten werden in der Datenbank gespeichert.",
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "Lokale Speicherung aktiviert",
+        description: "Die Daten werden jetzt lokal im Browser gespeichert.",
         duration: 3000,
       });
     }

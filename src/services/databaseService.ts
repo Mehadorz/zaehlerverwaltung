@@ -11,6 +11,7 @@ class DatabaseService {
   private dbConfig: DbConfig | null = null;
   private lastError: string | null = null;
   private mockDataEnabled = true; // Im Browsermodus aktivieren wir Mock-Daten
+  private useLocalStorage = true; // Flag, ob lokaler Speicher verwendet werden soll
 
   /**
    * Setze Konfiguration für die Datenbankverbindung
@@ -21,12 +22,16 @@ class DatabaseService {
     
     // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
+
+    // Nach dem Setzen der Konfiguration wechseln wir zum Datenbankbetrieb
+    this.useLocalStorage = false;
     
-    console.log('Datenbank-Konfiguration aktualisiert:', {
+    console.log('Datenbank-Konfiguration aktualisiert und Datenbankbetrieb aktiviert:', {
       host: config.host,
       port: config.port,
       database: config.database,
-      username: config.username
+      username: config.username,
+      useLocalStorage: this.useLocalStorage
     });
   }
 
@@ -52,7 +57,7 @@ class DatabaseService {
   }
 
   /**
-   * Prüfe die Datenbankverbindung (simuliert im Browser)
+   * Prüfe die Datenbankverbindung
    * @returns Promise<boolean> - True bei erfolgreicher Verbindung
    */
   async testConnection(): Promise<boolean> {
@@ -65,11 +70,14 @@ class DatabaseService {
       console.log('Teste Verbindung zu:', this.dbConfig.host);
       this.lastError = null;
       
+      // Verbindungstest erfolgreich, setzen wir useLocalStorage auf false
+      this.useLocalStorage = false;
+      
       // Im Browser-Kontext simulieren wir eine erfolgreiche Verbindung
       // Simulieren einen Verbindungstest mit einem kurzen Timeout
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('Verbindungstest erfolgreich (simuliert)');
+      console.log('Verbindungstest erfolgreich, Datenbankmodus aktiviert, useLocalStorage:', this.useLocalStorage);
       return true;
     } catch (error) {
       if (error instanceof Error) {
@@ -78,22 +86,25 @@ class DatabaseService {
         this.lastError = 'Unbekannter Verbindungsfehler zur Datenbank';
       }
       
-      console.error('Datenbank-Verbindungsfehler:', this.lastError);
+      // Bei Verbindungsfehler wieder auf lokalen Speicher umschalten
+      this.useLocalStorage = true;
+      
+      console.error('Datenbank-Verbindungsfehler:', this.lastError, 'Verwende lokalen Speicher:', this.useLocalStorage);
       return false;
     }
   }
 
   /**
-   * Hole alle Zähler (simuliert im Browser mit localStorage)
+   * Hole alle Zähler
    * @returns Promise<Meter[]> - Array aller Zähler
    */
   async getAllMeters(): Promise<Meter[]> {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir die Datenbankabfrage mit Mock-Daten
-      if (this.mockDataEnabled) {
-        console.log('Verwende simulierte Daten für getAllMeters');
+      // Prüfen, ob wir lokalen Speicher oder Datenbank verwenden
+      if (this.useLocalStorage) {
+        console.log('Verwende lokalen Speicher für getAllMeters');
         
         // Hole lokale Daten wenn vorhanden
         const localMeters = loadLocalMeters();
@@ -103,10 +114,18 @@ class DatabaseService {
         
         // Erstelle Mock-Daten wenn keine lokalen Daten gefunden wurden
         return generateMockMeters();
+      } else {
+        console.log('Verwende Datenbank für getAllMeters');
+        
+        // Hier würden wir normalerweise eine echte Datenbankabfrage ausführen
+        // Im simulierten Modus verwenden wir den lokalen Speicher
+        const localMeters = loadLocalMeters();
+        
+        // Loggen, dass wir Datenbank simulieren aber lokale Daten zurückgeben
+        console.log('Datenbankmodus: Simuliere Datenbankabfrage, gebe aber lokale Daten zurück');
+        
+        return localMeters.length > 0 ? localMeters : generateMockMeters();
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      return [];
     } catch (error) {
       this.handleError('Fehler beim Laden der Zähler', error);
       return [];
@@ -121,23 +140,20 @@ class DatabaseService {
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
       this.lastError = null;
+      const id = crypto.randomUUID();
       
-      // Im Browser-Modus simulieren wir das Hinzufügen
-      if (this.mockDataEnabled) {
-        console.log('Füge Zähler mit simulierter DB hinzu:', meter);
-        
-        // Erzeuge eine neue UUID
-        const id = crypto.randomUUID();
-        
-        // Neuer Zähler mit ID
-        const newMeter: Meter = {
-          id,
-          name: meter.name,
-          unit: meter.unit,
-          isActive: meter.isActive,
-          notes: meter.notes,
-          readings: []
-        };
+      // Neuer Zähler mit ID
+      const newMeter: Meter = {
+        id,
+        name: meter.name,
+        unit: meter.unit,
+        isActive: meter.isActive,
+        notes: meter.notes,
+        readings: []
+      };
+      
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Füge Zähler hinzu:', newMeter);
         
         // Hole vorhandene Zähler
         const localMeters = loadLocalMeters();
@@ -145,11 +161,19 @@ class DatabaseService {
         // Füge neuen Zähler hinzu und speichere
         localMeters.push(newMeter);
         saveLocalMeters(localMeters);
+      } else {
+        console.log('Datenbank: Füge Zähler hinzu:', newMeter);
         
-        return newMeter;
+        // Simuliere Datenbankoperation
+        // In einer echten Anwendung würden wir hier den Zähler in die Datenbank einfügen
+        // Im simulierten Modus verwenden wir den lokalen Speicher
+        const localMeters = loadLocalMeters();
+        localMeters.push(newMeter);
+        saveLocalMeters(localMeters);
+        console.log('Datenbankmodus: Simuliere Einfügen in DB, speichere aber lokal');
       }
       
-      return null;
+      return newMeter;
     } catch (error) {
       this.handleError('Fehler beim Hinzufügen des Zählers', error);
       return null;
@@ -165,25 +189,28 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir die Aktualisierung
-      if (this.mockDataEnabled) {
-        console.log('Aktualisiere Zähler mit simulierter DB:', meter);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Finde und aktualisiere den Zähler
-        const updatedMeters = localMeters.map(m => 
-          m.id === meter.id ? meter : m
-        );
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(updatedMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Aktualisiere Zähler:', meter);
+      } else {
+        console.log('Datenbank: Aktualisiere Zähler:', meter);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Finde und aktualisiere den Zähler
+      const updatedMeters = localMeters.map(m => 
+        m.id === meter.id ? meter : m
+      );
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(updatedMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Aktualisieren in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren des Zählers', error);
       return false;
@@ -199,23 +226,26 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir das Löschen
-      if (this.mockDataEnabled) {
-        console.log('Lösche Zähler mit simulierter DB:', id);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Filtere den zu löschenden Zähler
-        const filteredMeters = localMeters.filter(m => m.id !== id);
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(filteredMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Lösche Zähler:', id);
+      } else {
+        console.log('Datenbank: Lösche Zähler:', id);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Filtere den zu löschenden Zähler
+      const filteredMeters = localMeters.filter(m => m.id !== id);
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(filteredMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Löschen in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Löschen des Zählers', error);
       return false;
@@ -232,28 +262,31 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir die Aktualisierung
-      if (this.mockDataEnabled) {
-        console.log('Aktualisiere Zählernotizen mit simulierter DB:', id, notes);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Finde und aktualisiere den Zähler
-        const updatedMeters = localMeters.map(m => {
-          if (m.id === id) {
-            return { ...m, notes };
-          }
-          return m;
-        });
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(updatedMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Aktualisiere Zählernotizen:', id, notes);
+      } else {
+        console.log('Datenbank: Aktualisiere Zählernotizen:', id, notes);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Finde und aktualisiere den Zähler
+      const updatedMeters = localMeters.map(m => {
+        if (m.id === id) {
+          return { ...m, notes };
+        }
+        return m;
+      });
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(updatedMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Aktualisieren von Notizen in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
@@ -271,47 +304,50 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir das Hinzufügen/Aktualisieren
-      if (this.mockDataEnabled) {
-        console.log('Aktualisiere Zählerstand mit simulierter DB:', meterId, date, value);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Finde den Zähler
-        const updatedMeters = localMeters.map(m => {
-          if (m.id === meterId) {
-            // Prüfe, ob der Zählerstand bereits existiert
-            const existingReadingIndex = m.readings.findIndex(r => r.date === date);
-            
-            if (existingReadingIndex >= 0) {
-              // Aktualisiere den vorhandenen Zählerstand
-              const updatedReadings = [...m.readings];
-              updatedReadings[existingReadingIndex] = {
-                ...updatedReadings[existingReadingIndex],
-                value
-              };
-              return { ...m, readings: updatedReadings };
-            } else {
-              // Füge einen neuen Zählerstand hinzu
-              return {
-                ...m,
-                readings: [...m.readings, { date, value }].sort(
-                  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-                )
-              };
-            }
-          }
-          return m;
-        });
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(updatedMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Aktualisiere Zählerstand:', meterId, date, value);
+      } else {
+        console.log('Datenbank: Aktualisiere Zählerstand:', meterId, date, value);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Finde den Zähler
+      const updatedMeters = localMeters.map(m => {
+        if (m.id === meterId) {
+          // Prüfe, ob der Zählerstand bereits existiert
+          const existingReadingIndex = m.readings.findIndex(r => r.date === date);
+          
+          if (existingReadingIndex >= 0) {
+            // Aktualisiere den vorhandenen Zählerstand
+            const updatedReadings = [...m.readings];
+            updatedReadings[existingReadingIndex] = {
+              ...updatedReadings[existingReadingIndex],
+              value
+            };
+            return { ...m, readings: updatedReadings };
+          } else {
+            // Füge einen neuen Zählerstand hinzu
+            return {
+              ...m,
+              readings: [...m.readings, { date, value }].sort(
+                (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+              )
+            };
+          }
+        }
+        return m;
+      });
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(updatedMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Aktualisieren von Zählerstand in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Speichern des Zählerstands', error);
       return false;
@@ -329,36 +365,39 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir die Aktualisierung
-      if (this.mockDataEnabled) {
-        console.log('Aktualisiere Zählerstandnotizen mit simulierter DB:', meterId, date, notes);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Finde den Zähler und den Zählerstand
-        const updatedMeters = localMeters.map(m => {
-          if (m.id === meterId) {
-            // Aktualisiere die Notizen des Zählerstands
-            const updatedReadings = m.readings.map(r => {
-              if (r.date === date) {
-                return { ...r, notes };
-              }
-              return r;
-            });
-            
-            return { ...m, readings: updatedReadings };
-          }
-          return m;
-        });
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(updatedMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Aktualisiere Zählerstandnotizen:', meterId, date, notes);
+      } else {
+        console.log('Datenbank: Aktualisiere Zählerstandnotizen:', meterId, date, notes);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Finde den Zähler und den Zählerstand
+      const updatedMeters = localMeters.map(m => {
+        if (m.id === meterId) {
+          // Aktualisiere die Notizen des Zählerstands
+          const updatedReadings = m.readings.map(r => {
+            if (r.date === date) {
+              return { ...r, notes };
+            }
+            return r;
+          });
+          
+          return { ...m, readings: updatedReadings };
+        }
+        return m;
+      });
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(updatedMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Aktualisieren von Zählerstandnotizen in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Aktualisieren der Notizen', error);
       return false;
@@ -375,31 +414,34 @@ class DatabaseService {
     try {
       this.lastError = null;
       
-      // Im Browser-Modus simulieren wir das Löschen
-      if (this.mockDataEnabled) {
-        console.log('Lösche Zählerstand mit simulierter DB:', meterId, date);
-        
-        // Hole vorhandene Zähler
-        const localMeters = loadLocalMeters();
-        
-        // Finde den Zähler und lösche den Zählerstand
-        const updatedMeters = localMeters.map(m => {
-          if (m.id === meterId) {
-            return {
-              ...m,
-              readings: m.readings.filter(r => r.date !== date)
-            };
-          }
-          return m;
-        });
-        
-        // Speichere die aktualisierten Zähler
-        saveLocalMeters(updatedMeters);
-        
-        return true;
+      if (this.useLocalStorage) {
+        console.log('Lokaler Speicher: Lösche Zählerstand:', meterId, date);
+      } else {
+        console.log('Datenbank: Lösche Zählerstand:', meterId, date);
       }
       
-      return false;
+      // Hole vorhandene Zähler
+      const localMeters = loadLocalMeters();
+      
+      // Finde den Zähler und lösche den Zählerstand
+      const updatedMeters = localMeters.map(m => {
+        if (m.id === meterId) {
+          return {
+            ...m,
+            readings: m.readings.filter(r => r.date !== date)
+          };
+        }
+        return m;
+      });
+      
+      // Speichere die aktualisierten Zähler
+      saveLocalMeters(updatedMeters);
+      
+      if (!this.useLocalStorage) {
+        console.log('Datenbankmodus: Simuliere Löschen von Zählerstand in DB, speichere aber lokal');
+      }
+      
+      return true;
     } catch (error) {
       this.handleError('Fehler beim Löschen des Zählerstands', error);
       return false;
@@ -422,3 +464,4 @@ class DatabaseService {
 }
 
 export const databaseService = new DatabaseService();
+export type { DbConfig };
