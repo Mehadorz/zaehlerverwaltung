@@ -1,39 +1,21 @@
 
-import axios from 'axios';
+import { DbConfig, Meter, Reading } from './types';
+import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
-// Schnittstelle für einen Zählerstand
-interface Reading {
-  date: string;
-  value: number;
-  notes?: string;
-}
-
-// Schnittstelle für einen Zähler
-interface Meter {
-  id: string;
-  name: string;
-  unit: string;
-  isActive: boolean;
-  notes?: string;
-  readings: Reading[];
-}
-
-// Schnittstelle für Datenbank-Konfiguration
-export interface DbConfig {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
-}
-
-// Service-Klasse für Datenbankoperationen
+/**
+ * Service-Klasse für Datenbankoperationen
+ * Stellt Methoden für den Zugriff auf die Datenbank zur Verfügung
+ * Verwendet im Browser-Modus localStorage als Ersatz für die Datenbank
+ */
 class DatabaseService {
   private dbConfig: DbConfig | null = null;
   private lastError: string | null = null;
   private mockDataEnabled = true; // Im Browsermodus aktivieren wir Mock-Daten
 
-  // Setze Konfiguration für die Datenbankverbindung
+  /**
+   * Setze Konfiguration für die Datenbankverbindung
+   * @param config Datenbank-Konfiguration
+   */
   setConfig(config: DbConfig) {
     this.dbConfig = config;
     
@@ -48,7 +30,10 @@ class DatabaseService {
     });
   }
 
-  // Lade gespeicherte Konfiguration aus dem localStorage
+  /**
+   * Lade gespeicherte Konfiguration aus dem localStorage
+   * @returns Datenbank-Konfiguration oder null, wenn keine vorhanden
+   */
   loadConfig(): DbConfig | null {
     const saved = localStorage.getItem('dbConfig');
     if (saved) {
@@ -58,12 +43,18 @@ class DatabaseService {
     return null;
   }
 
-  // Liefere den letzten Fehler zurück
+  /**
+   * Liefere den letzten Fehler zurück
+   * @returns Fehlermeldung oder null, wenn kein Fehler aufgetreten ist
+   */
   getLastError(): string | null {
     return this.lastError;
   }
 
-  // Prüfe die Datenbankverbindung (simuliert im Browser)
+  /**
+   * Prüfe die Datenbankverbindung (simuliert im Browser)
+   * @returns Promise<boolean> - True bei erfolgreicher Verbindung
+   */
   async testConnection(): Promise<boolean> {
     try {
       if (!this.dbConfig) {
@@ -75,12 +66,9 @@ class DatabaseService {
       this.lastError = null;
       
       // Im Browser-Kontext simulieren wir eine erfolgreiche Verbindung
-      // In einer echten Anwendung würde hier ein API-Endpunkt aufgerufen werden
-      
-      // Wir simulieren hier einen Verbindungstest mit einem kurzen Timeout
+      // Simulieren einen Verbindungstest mit einem kurzen Timeout
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Erfolgreiche Verbindung simulieren
       console.log('Verbindungstest erfolgreich (simuliert)');
       return true;
     } catch (error) {
@@ -95,7 +83,10 @@ class DatabaseService {
     }
   }
 
-  // Hole alle Zähler (simuliert im Browser)
+  /**
+   * Hole alle Zähler (simuliert im Browser mit localStorage)
+   * @returns Promise<Meter[]> - Array aller Zähler
+   */
   async getAllMeters(): Promise<Meter[]> {
     try {
       this.lastError = null;
@@ -105,45 +96,16 @@ class DatabaseService {
         console.log('Verwende simulierte Daten für getAllMeters');
         
         // Hole lokale Daten wenn vorhanden
-        const localMeters = localStorage.getItem('meters');
-        if (localMeters) {
-          return JSON.parse(localMeters);
+        const localMeters = loadLocalMeters();
+        if (localMeters.length > 0) {
+          return localMeters;
         }
         
         // Erstelle Mock-Daten wenn keine lokalen Daten gefunden wurden
-        const mockMeters: Meter[] = [
-          {
-            id: crypto.randomUUID(),
-            name: 'Strom',
-            unit: 'kWh',
-            isActive: true,
-            readings: [
-              { date: '2024-01-01', value: 1000 },
-              { date: '2024-02-01', value: 1150 },
-              { date: '2024-03-01', value: 1300 }
-            ]
-          },
-          {
-            id: crypto.randomUUID(),
-            name: 'Wasser',
-            unit: 'm³',
-            isActive: true,
-            readings: [
-              { date: '2024-01-01', value: 120 },
-              { date: '2024-02-01', value: 135 },
-              { date: '2024-03-01', value: 150 }
-            ]
-          }
-        ];
-        
-        // Speichere Mock-Daten für spätere Verwendung
-        localStorage.setItem('meters', JSON.stringify(mockMeters));
-        return mockMeters;
+        return generateMockMeters();
       }
       
       // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.get('/api/meters').then(res => res.data);
-      
       return [];
     } catch (error) {
       this.handleError('Fehler beim Laden der Zähler', error);
@@ -151,7 +113,11 @@ class DatabaseService {
     }
   }
 
-  // Füge einen neuen Zähler hinzu
+  /**
+   * Füge einen neuen Zähler hinzu
+   * @param meter Zähler ohne ID
+   * @returns Promise<Meter | null> - Neu erstellter Zähler mit ID oder null bei Fehler
+   */
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
       this.lastError = null;
@@ -174,17 +140,14 @@ class DatabaseService {
         };
         
         // Hole vorhandene Zähler
-        const localMeters = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Füge neuen Zähler hinzu und speichere
         localMeters.push(newMeter);
-        localStorage.setItem('meters', JSON.stringify(localMeters));
+        saveLocalMeters(localMeters);
         
         return newMeter;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.post('/api/meters', meter).then(res => res.data);
       
       return null;
     } catch (error) {
@@ -193,7 +156,11 @@ class DatabaseService {
     }
   }
 
-  // Aktualisiere einen Zähler
+  /**
+   * Aktualisiere einen Zähler
+   * @param meter Zähler mit aktualisierten Daten
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async updateMeter(meter: Meter): Promise<boolean> {
     try {
       this.lastError = null;
@@ -203,7 +170,7 @@ class DatabaseService {
         console.log('Aktualisiere Zähler mit simulierter DB:', meter);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Finde und aktualisiere den Zähler
         const updatedMeters = localMeters.map(m => 
@@ -211,13 +178,10 @@ class DatabaseService {
         );
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        saveLocalMeters(updatedMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.put(`/api/meters/${meter.id}`, meter).then(() => true);
       
       return false;
     } catch (error) {
@@ -226,7 +190,11 @@ class DatabaseService {
     }
   }
 
-  // Lösche einen Zähler
+  /**
+   * Lösche einen Zähler
+   * @param id ID des zu löschenden Zählers
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async deleteMeter(id: string): Promise<boolean> {
     try {
       this.lastError = null;
@@ -236,19 +204,16 @@ class DatabaseService {
         console.log('Lösche Zähler mit simulierter DB:', id);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Filtere den zu löschenden Zähler
         const filteredMeters = localMeters.filter(m => m.id !== id);
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(filteredMeters));
+        saveLocalMeters(filteredMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.delete(`/api/meters/${id}`).then(() => true);
       
       return false;
     } catch (error) {
@@ -257,7 +222,12 @@ class DatabaseService {
     }
   }
 
-  // Füge eine Notiz zu einem Zähler hinzu
+  /**
+   * Füge eine Notiz zu einem Zähler hinzu
+   * @param id ID des Zählers
+   * @param notes Notizen
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async updateMeterNotes(id: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
@@ -267,7 +237,7 @@ class DatabaseService {
         console.log('Aktualisiere Zählernotizen mit simulierter DB:', id, notes);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Finde und aktualisiere den Zähler
         const updatedMeters = localMeters.map(m => {
@@ -278,13 +248,10 @@ class DatabaseService {
         });
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        saveLocalMeters(updatedMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.patch(`/api/meters/${id}/notes`, { notes }).then(() => true);
       
       return false;
     } catch (error) {
@@ -293,7 +260,13 @@ class DatabaseService {
     }
   }
 
-  // Füge einen Zählerstand hinzu oder aktualisiere ihn
+  /**
+   * Füge einen Zählerstand hinzu oder aktualisiere ihn
+   * @param meterId ID des Zählers
+   * @param date Datum des Zählerstands
+   * @param value Wert des Zählerstands
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async addOrUpdateReading(meterId: string, date: string, value: number): Promise<boolean> {
     try {
       this.lastError = null;
@@ -303,7 +276,7 @@ class DatabaseService {
         console.log('Aktualisiere Zählerstand mit simulierter DB:', meterId, date, value);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Finde den Zähler
         const updatedMeters = localMeters.map(m => {
@@ -333,13 +306,10 @@ class DatabaseService {
         });
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        saveLocalMeters(updatedMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.post(`/api/meters/${meterId}/readings`, { date, value }).then(() => true);
       
       return false;
     } catch (error) {
@@ -348,7 +318,13 @@ class DatabaseService {
     }
   }
 
-  // Aktualisiere Notizen für einen Zählerstand
+  /**
+   * Aktualisiere Notizen für einen Zählerstand
+   * @param meterId ID des Zählers
+   * @param date Datum des Zählerstands
+   * @param notes Notizen
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async updateReadingNotes(meterId: string, date: string, notes: string): Promise<boolean> {
     try {
       this.lastError = null;
@@ -358,7 +334,7 @@ class DatabaseService {
         console.log('Aktualisiere Zählerstandnotizen mit simulierter DB:', meterId, date, notes);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Finde den Zähler und den Zählerstand
         const updatedMeters = localMeters.map(m => {
@@ -377,13 +353,10 @@ class DatabaseService {
         });
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        saveLocalMeters(updatedMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.patch(`/api/meters/${meterId}/readings/${date}/notes`, { notes }).then(() => true);
       
       return false;
     } catch (error) {
@@ -392,7 +365,12 @@ class DatabaseService {
     }
   }
 
-  // Lösche einen Zählerstand
+  /**
+   * Lösche einen Zählerstand
+   * @param meterId ID des Zählers
+   * @param date Datum des Zählerstands
+   * @returns Promise<boolean> - True bei Erfolg
+   */
   async deleteReading(meterId: string, date: string): Promise<boolean> {
     try {
       this.lastError = null;
@@ -402,7 +380,7 @@ class DatabaseService {
         console.log('Lösche Zählerstand mit simulierter DB:', meterId, date);
         
         // Hole vorhandene Zähler
-        const localMeters: Meter[] = JSON.parse(localStorage.getItem('meters') || '[]');
+        const localMeters = loadLocalMeters();
         
         // Finde den Zähler und lösche den Zählerstand
         const updatedMeters = localMeters.map(m => {
@@ -416,13 +394,10 @@ class DatabaseService {
         });
         
         // Speichere die aktualisierten Zähler
-        localStorage.setItem('meters', JSON.stringify(updatedMeters));
+        saveLocalMeters(updatedMeters);
         
         return true;
       }
-      
-      // In einer echten Anwendung würde hier eine API-Anfrage erfolgen
-      // return await axios.delete(`/api/meters/${meterId}/readings/${date}`).then(() => true);
       
       return false;
     } catch (error) {
@@ -431,7 +406,11 @@ class DatabaseService {
     }
   }
 
-  // Fehlerbehandlung für alle Methoden
+  /**
+   * Fehlerbehandlung für alle Methoden
+   * @param message Fehlermeldung
+   * @param error Fehler-Objekt
+   */
   private handleError(message: string, error: unknown): void {
     if (error instanceof Error) {
       this.lastError = `${message}: ${error.message}`;
