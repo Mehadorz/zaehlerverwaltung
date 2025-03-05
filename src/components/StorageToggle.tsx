@@ -17,6 +17,7 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
   const [useDatabase, setUseDatabase] = useState(false);
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const { toast } = useToast();
 
   // Lade die gespeicherte Einstellung beim Start
@@ -43,23 +44,37 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
   // Prüfe die Datenbankverbindung wenn useDatabase aktiviert wird
   const checkDatabaseConnection = async () => {
     setConnectionError(null);
-    const connected = await databaseService.testConnection();
-    setIsConnected(connected);
-    
-    if (!connected) {
-      const errorMsg = databaseService.getLastError();
-      setConnectionError(errorMsg);
-      console.error("Verbindungsfehler:", errorMsg);
+    setIsCheckingConnection(true);
+    try {
+      const connected = await databaseService.testConnection();
+      setIsConnected(connected);
+      
+      if (!connected) {
+        const errorMsg = databaseService.getLastError();
+        setConnectionError(errorMsg);
+        console.error("Verbindungsfehler:", errorMsg);
+      }
+      
+      return connected;
+    } finally {
+      setIsCheckingConnection(false);
     }
-    
-    return connected;
   };
 
   // Handler für Änderungen der Speichermethode
   const handleStorageChange = async (checked: boolean) => {
     if (checked) {
+      // Status aktualisieren und UI-Feedback zeigen
+      setIsCheckingConnection(true);
+      toast({
+        title: "Verbindung wird geprüft",
+        description: "Prüfe Verbindung zur Datenbank...",
+        duration: 2000,
+      });
+      
       // Prüfe die Datenbankverbindung wenn Datenbank gewählt wurde
       const connected = await checkDatabaseConnection();
+      
       if (!connected) {
         const errorMsg = databaseService.getLastError() || "Keine Verbindung zur Datenbank möglich.";
         toast({
@@ -69,8 +84,10 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
           duration: 5000,
         });
         setUseDatabase(false);
+        setIsCheckingConnection(false);
         return;
       }
+      
       toast({
         title: "Verbindung hergestellt",
         description: "Erfolgreich mit der Datenbank verbunden. Daten werden in der Datenbank gespeichert.",
@@ -107,6 +124,7 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
               id="storage-toggle"
               checked={useDatabase}
               onCheckedChange={handleStorageChange}
+              disabled={isCheckingConnection}
             />
             <Label htmlFor="storage-toggle">
               {useDatabase ? "Datenbank Speicherung" : "Lokale Speicherung"}
@@ -114,13 +132,16 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
           </div>
           {useDatabase && (
             <div className="flex items-center">
-              {isConnected === true && (
+              {isCheckingConnection && (
+                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {!isCheckingConnection && isConnected === true && (
                 <CheckCircle className="w-5 h-5 text-green-500" />
               )}
-              {isConnected === false && (
+              {!isCheckingConnection && isConnected === false && (
                 <XCircle className="w-5 h-5 text-red-500" />
               )}
-              {isConnected === null && (
+              {!isCheckingConnection && isConnected === null && (
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
               )}
             </div>

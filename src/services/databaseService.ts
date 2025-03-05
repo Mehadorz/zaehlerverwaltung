@@ -1,4 +1,3 @@
-
 import { DbConfig, Meter, Reading } from './types';
 import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
@@ -23,10 +22,10 @@ class DatabaseService {
     // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
 
-    // Nach dem Setzen der Konfiguration wechseln wir zum Datenbankbetrieb
-    this.useLocalStorage = false;
+    // Nach dem Setzen der Konfiguration wechseln wir nicht automatisch zum Datenbankbetrieb
+    // Dies wird erst nach erfolgreichem Verbindungstest erfolgen
     
-    console.log('Datenbank-Konfiguration aktualisiert und Datenbankbetrieb aktiviert:', {
+    console.log('Datenbank-Konfiguration aktualisiert:', {
       host: config.host,
       port: config.port,
       database: config.database,
@@ -70,12 +69,41 @@ class DatabaseService {
       console.log('Teste Verbindung zu:', this.dbConfig.host);
       this.lastError = null;
       
+      // Simuliere einen echten Verbindungstest mit Validierung der Eingabedaten
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Überprüfe die Verbindungsdaten auf Gültigkeit (simuliert)
+      const isValidHost = this.validateHost(this.dbConfig.host);
+      const isValidPort = this.validatePort(this.dbConfig.port);
+      const isValidCredentials = this.validateCredentials(this.dbConfig.username, this.dbConfig.password);
+      const isValidDatabase = this.validateDatabase(this.dbConfig.database);
+      
+      if (!isValidHost) {
+        this.lastError = "Ungültiger Host-Name oder Host nicht erreichbar";
+        this.useLocalStorage = true;
+        return false;
+      }
+      
+      if (!isValidPort) {
+        this.lastError = "Ungültiger Port oder Port nicht erreichbar";
+        this.useLocalStorage = true;
+        return false;
+      }
+      
+      if (!isValidCredentials) {
+        this.lastError = "Ungültige Zugangsdaten (Benutzername/Passwort)";
+        this.useLocalStorage = true;
+        return false;
+      }
+      
+      if (!isValidDatabase) {
+        this.lastError = "Datenbank nicht vorhanden oder keine Zugriffsrechte";
+        this.useLocalStorage = true;
+        return false;
+      }
+      
       // Verbindungstest erfolgreich, setzen wir useLocalStorage auf false
       this.useLocalStorage = false;
-      
-      // Im Browser-Kontext simulieren wir eine erfolgreiche Verbindung
-      // Simulieren einen Verbindungstest mit einem kurzen Timeout
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       console.log('Verbindungstest erfolgreich, Datenbankmodus aktiviert, useLocalStorage:', this.useLocalStorage);
       return true;
@@ -92,6 +120,68 @@ class DatabaseService {
       console.error('Datenbank-Verbindungsfehler:', this.lastError, 'Verwende lokalen Speicher:', this.useLocalStorage);
       return false;
     }
+  }
+
+  /**
+   * Validiere den Host-Namen (simuliert)
+   * @param host Host-Name
+   * @returns True wenn der Host gültig ist
+   */
+  private validateHost(host: string): boolean {
+    // Beispielvalidierung: localhost, 127.0.0.1 und db sind gültig
+    const validHosts = ['localhost', '127.0.0.1', 'db', 'database', 'mysql'];
+    if (host.trim() === '') return false;
+    if (validHosts.includes(host.toLowerCase())) return true;
+    
+    // IP-Adressen-Format prüfen
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    if (ipPattern.test(host)) return true;
+    
+    // Domain-Format prüfen
+    const domainPattern = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/;
+    return domainPattern.test(host);
+  }
+
+  /**
+   * Validiere den Port (simuliert)
+   * @param port Port
+   * @returns True wenn der Port gültig ist
+   */
+  private validatePort(port: number): boolean {
+    // Port muss eine Zahl zwischen 1 und 65535 sein
+    return port > 0 && port <= 65535;
+  }
+
+  /**
+   * Validiere die Zugangsdaten (simuliert)
+   * @param username Benutzername
+   * @param password Passwort
+   * @returns True wenn die Zugangsdaten gültig sind
+   */
+  private validateCredentials(username: string, password: string): boolean {
+    // Prüfe, dass Benutzername und Passwort mindestens 3 Zeichen lang sind
+    if (username.trim().length < 3) return false;
+    if (password.length < 3) return false;
+    
+    // Beispielvalidierung: meter_user/meter_password ist korrekt
+    if (username === 'meter_user' && password === 'meter_password') return true;
+    
+    // In einer realen Anwendung würden wir hier eine tatsächliche Authentifizierung durchführen
+    // Für Testzwecke akzeptieren wir nur meter_user/meter_password als gültige Kombination
+    return false;
+  }
+
+  /**
+   * Validiere die Datenbank (simuliert)
+   * @param database Datenbankname
+   * @returns True wenn die Datenbank gültig ist
+   */
+  private validateDatabase(database: string): boolean {
+    // Prüfe, dass der Datenbankname mindestens 3 Zeichen lang ist
+    if (database.trim().length < 3) return false;
+    
+    // Beispielvalidierung: meter_db ist korrekt
+    return database === 'meter_db';
   }
 
   /**
