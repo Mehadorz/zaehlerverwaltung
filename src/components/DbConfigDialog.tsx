@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +27,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   
-  // Lade gespeicherte Konfiguration oder setze Standardwerte
   const savedConfig = databaseService.loadConfig() || {
     host: "localhost",
     port: 3000,
@@ -48,7 +46,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   };
 
   const validateConfig = (): boolean => {
-    // Prüfe, ob alle erforderlichen Felder gefüllt sind
     if (!config.host || config.host.trim() === '') {
       setConfigError("Bitte geben Sie einen Host an");
       return false;
@@ -78,7 +75,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   };
 
   const handleSave = async () => {
-    // Zuerst Konfiguration validieren
     if (!validateConfig()) {
       return;
     }
@@ -87,10 +83,8 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
     setConfigError(null);
     
     try {
-      // Konfiguration im Service speichern
       databaseService.setConfig(config);
       
-      // Teste die Verbindung mit den neuen Einstellungen
       toast({
         title: "Konfiguration gespeichert",
         description: "Prüfe Verbindung mit den neuen Einstellungen...",
@@ -106,7 +100,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           duration: 3000,
         });
         
-        // Dialog schließen
         setOpen(false);
       } else {
         const errorMsg = databaseService.getLastError() || "Unbekannter Fehler";
@@ -145,8 +138,9 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           <DialogDescription>
             Bitte geben Sie die Verbindungsdaten für Ihre Datenbank ein.
             <div className="mt-2 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
-              <strong>Hinweis:</strong> In der Demo-Version können Sie sich 
-              nur mit localhost, 127.0.0.1, db, database oder mysql verbinden.
+              <strong>Hinweis:</strong> Für eine echte Verbindung müsste ein 
+              Datenbankserver auf dem angegebenen Host und Port erreichbar sein.
+              In dieser Demo-Version wird die Verbindung simuliert.
             </div>
           </DialogDescription>
         </DialogHeader>

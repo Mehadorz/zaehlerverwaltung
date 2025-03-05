@@ -1,3 +1,4 @@
+
 import { DbConfig, Meter, Reading } from './types';
 import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
@@ -154,8 +155,7 @@ class DatabaseService {
     // und andere nicht, um realistischeres Verhalten zu demonstrieren
     const validHosts = ['localhost', '127.0.0.1', 'db', 'database', 'mysql'];
     
-    // Für die Demo: nur bestimmte Hosts sind "erreichbar"
-    // In einer echten Anwendung würde hier ein tatsächlicher Verbindungstest stattfinden
+    // Für die Demo: diese Hosts sind "erreichbar"
     if (validHosts.includes(this.dbConfig.host.toLowerCase())) {
       return true;
     }
@@ -164,19 +164,35 @@ class DatabaseService {
     const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
     if (ipPattern.test(this.dbConfig.host)) {
       // In einer echten Anwendung: teste tatsächliche Verbindung
-      // Für die Demo: Gib an, dass nicht zu jeder IP verbunden werden kann
+      
+      // Erlaube Verbindungen zu lokalen IP-Adressen (z.B. 192.168.x.x, 10.x.x.x)
       const ipParts = this.dbConfig.host.split('.');
-      // Simuliere, dass bestimmte IP-Adressen nicht erreichbar sind
-      if (ipParts[0] === '192' || ipParts[0] === '10') {
+      const firstOctet = parseInt(ipParts[0]);
+      
+      // Lokale IP-Bereiche sind jetzt erlaubt
+      if (firstOctet === 192 || firstOctet === 10 || 
+          (firstOctet === 172 && parseInt(ipParts[1]) >= 16 && parseInt(ipParts[1]) <= 31) ||
+          this.dbConfig.host === '127.0.0.1') {
+        console.log(`Simuliere erfolgreiche Verbindung zu lokaler IP ${this.dbConfig.host}`);
+        return true;
+      }
+      
+      // Simuliere, dass IP-Verbindungen im Demo-Modus funktionieren können
+      const randomSuccess = Math.random() > 0.3; // 70% Erfolgsrate für andere IPs
+      if (!randomSuccess) {
         this.lastError = `Verbindung zu ${this.dbConfig.host} konnte nicht hergestellt werden (Zeitüberschreitung)`;
         return false;
       }
-      return false; // Generell keine IP-Verbindungen im Demo-Modus
+      return true;
     }
     
-    // Bei echten Domain-Namen simulieren wir einen Verbindungsfehler
-    this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar`;
-    return false;
+    // Bei echten Domain-Namen simulieren wir einen Verbindungsfehler oder Erfolg
+    const randomSuccess = Math.random() > 0.5; // 50% Erfolgsrate für Domains
+    if (!randomSuccess) {
+      this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar`;
+      return false;
+    }
+    return true;
   }
 
   /**
