@@ -161,4 +161,4 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
       )}
     </div>
   );
-};
+}

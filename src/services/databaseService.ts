@@ -11,6 +11,7 @@ class DatabaseService {
   private lastError: string | null = null;
   private mockDataEnabled = true; // Im Browsermodus aktivieren wir Mock-Daten
   private useLocalStorage = true; // Flag, ob lokaler Speicher verwendet werden soll
+  private isConnected = false; // Neues Flag für den Verbindungsstatus
 
   /**
    * Setze Konfiguration für die Datenbankverbindung
@@ -56,6 +57,14 @@ class DatabaseService {
   }
 
   /**
+   * Prüft, ob eine aktive Datenbankverbindung besteht
+   * @returns True, wenn verbunden
+   */
+  isDbConnected(): boolean {
+    return this.isConnected;
+  }
+
+  /**
    * Prüfe die Datenbankverbindung
    * @returns Promise<boolean> - True bei erfolgreicher Verbindung
    */
@@ -63,54 +72,29 @@ class DatabaseService {
     try {
       if (!this.dbConfig) {
         this.lastError = "Die Datenbank-Konfiguration wurde nicht gesetzt";
+        this.isConnected = false;
         return false;
       }
       
       console.log('Teste Verbindung zu:', this.dbConfig.host);
       this.lastError = null;
       
-      // Simuliere einen echten Verbindungstest mit Validierung der Eingabedaten
+      // Simuliere einen echten Verbindungstest
+      // In einer echten Implementierung würden wir hier eine tatsächliche Verbindung testen
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Überprüfe nur Host und Port auf Gültigkeit (simuliert)
-      const isValidHost = this.validateHost(this.dbConfig.host);
-      const isValidPort = this.validatePort(this.dbConfig.port);
-      
-      if (!isValidHost) {
-        this.lastError = "Ungültiger Host-Name oder Host nicht erreichbar";
+      // Durchführen eines Pseudo-Verbindungstests
+      const canConnect = await this.simulateDbConnection();
+      if (!canConnect) {
+        // Verbindungstest fehlgeschlagen, verbleibe im lokalen Modus
         this.useLocalStorage = true;
-        return false;
-      }
-      
-      if (!isValidPort) {
-        this.lastError = "Ungültiger Port oder Port nicht erreichbar";
-        this.useLocalStorage = true;
-        return false;
-      }
-      
-      // Benutzername, Passwort und Datenbankname werden nicht mehr validiert
-      // Wir akzeptieren alle Werte, solange sie nicht leer sind
-      
-      if (!this.dbConfig.username || this.dbConfig.username.trim() === '') {
-        this.lastError = "Benutzername darf nicht leer sein";
-        this.useLocalStorage = true;
-        return false;
-      }
-      
-      if (!this.dbConfig.password || this.dbConfig.password.trim() === '') {
-        this.lastError = "Passwort darf nicht leer sein";
-        this.useLocalStorage = true;
-        return false;
-      }
-      
-      if (!this.dbConfig.database || this.dbConfig.database.trim() === '') {
-        this.lastError = "Datenbankname darf nicht leer sein";
-        this.useLocalStorage = true;
+        this.isConnected = false;
         return false;
       }
       
       // Verbindungstest erfolgreich, setzen wir useLocalStorage auf false
       this.useLocalStorage = false;
+      this.isConnected = true;
       
       console.log('Verbindungstest erfolgreich, Datenbankmodus aktiviert, useLocalStorage:', this.useLocalStorage);
       return true;
@@ -123,10 +107,76 @@ class DatabaseService {
       
       // Bei Verbindungsfehler wieder auf lokalen Speicher umschalten
       this.useLocalStorage = true;
+      this.isConnected = false;
       
       console.error('Datenbank-Verbindungsfehler:', this.lastError, 'Verwende lokalen Speicher:', this.useLocalStorage);
       return false;
     }
+  }
+
+  /**
+   * Simuliert eine Datenbankverbindung
+   * HINWEIS: Hier würde normalerweise eine echte Verbindungsprüfung stattfinden
+   */
+  private async simulateDbConnection(): Promise<boolean> {
+    if (!this.dbConfig) return false;
+    
+    // Grundlegende Validierung der Eingaben
+    if (!this.dbConfig.host || this.dbConfig.host.trim() === '') {
+      this.lastError = "Host darf nicht leer sein";
+      return false;
+    }
+    
+    if (!this.dbConfig.port || this.dbConfig.port <= 0 || this.dbConfig.port > 65535) {
+      this.lastError = "Port muss zwischen 1 und 65535 liegen";
+      return false;
+    }
+    
+    if (!this.dbConfig.username || this.dbConfig.username.trim() === '') {
+      this.lastError = "Benutzername darf nicht leer sein";
+      return false;
+    }
+    
+    if (!this.dbConfig.password || this.dbConfig.password.trim() === '') {
+      this.lastError = "Passwort darf nicht leer sein";
+      return false;
+    }
+    
+    if (!this.dbConfig.database || this.dbConfig.database.trim() === '') {
+      this.lastError = "Datenbankname darf nicht leer sein";
+      return false;
+    }
+    
+    // Simuliere tatsächliches Verbindungstesten
+    // In einer realen Anwendung würden wir hier eine tatsächliche DB-Verbindung testen
+    
+    // Im Demofall simulieren wir, dass bestimmte Host-Werte erreichbar sind 
+    // und andere nicht, um realistischeres Verhalten zu demonstrieren
+    const validHosts = ['localhost', '127.0.0.1', 'db', 'database', 'mysql'];
+    
+    // Für die Demo: nur bestimmte Hosts sind "erreichbar"
+    // In einer echten Anwendung würde hier ein tatsächlicher Verbindungstest stattfinden
+    if (validHosts.includes(this.dbConfig.host.toLowerCase())) {
+      return true;
+    }
+    
+    // Teste IP-Format
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    if (ipPattern.test(this.dbConfig.host)) {
+      // In einer echten Anwendung: teste tatsächliche Verbindung
+      // Für die Demo: Gib an, dass nicht zu jeder IP verbunden werden kann
+      const ipParts = this.dbConfig.host.split('.');
+      // Simuliere, dass bestimmte IP-Adressen nicht erreichbar sind
+      if (ipParts[0] === '192' || ipParts[0] === '10') {
+        this.lastError = `Verbindung zu ${this.dbConfig.host} konnte nicht hergestellt werden (Zeitüberschreitung)`;
+        return false;
+      }
+      return false; // Generell keine IP-Verbindungen im Demo-Modus
+    }
+    
+    // Bei echten Domain-Namen simulieren wir einen Verbindungsfehler
+    this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar`;
+    return false;
   }
 
   /**
@@ -160,26 +210,6 @@ class DatabaseService {
   }
 
   /**
-   * Validiere die Zugangsdaten (simuliert)
-   * Diese Methode wird nicht mehr verwendet, da wir alle Benutzername/Passwort-Kombinationen akzeptieren
-   * @private
-   */
-  private validateCredentials(username: string, password: string): boolean {
-    // Diese Methode wird nicht mehr verwendet
-    return true;
-  }
-
-  /**
-   * Validiere die Datenbank (simuliert)
-   * Diese Methode wird nicht mehr verwendet, da wir alle Datenbanknamen akzeptieren
-   * @private
-   */
-  private validateDatabase(database: string): boolean {
-    // Diese Methode wird nicht mehr verwendet
-    return true;
-  }
-
-  /**
    * Hole alle Zähler
    * @returns Promise<Meter[]> - Array aller Zähler
    */
@@ -200,9 +230,21 @@ class DatabaseService {
         // Erstelle Mock-Daten wenn keine lokalen Daten gefunden wurden
         return generateMockMeters();
       } else {
+        if (!this.isConnected) {
+          // Wenn wir nicht verbunden sind, versuche eine Verbindung herzustellen
+          const connected = await this.testConnection();
+          if (!connected) {
+            // Wenn keine Verbindung hergestellt werden kann, verwende lokalen Speicher
+            console.log('Konnte keine Datenbankverbindung herstellen, verwende lokalen Speicher');
+            return loadLocalMeters();
+          }
+        }
+        
         console.log('Verwende Datenbank für getAllMeters');
         
-        // Hier würden wir normalerweise eine echte Datenbankabfrage ausführen
+        // In einer realen Anwendung würden wir hier eine SQL-Abfrage ausführen
+        // z.B.: SELECT * FROM meters
+        
         // Im simulierten Modus verwenden wir den lokalen Speicher
         const localMeters = loadLocalMeters();
         
@@ -225,6 +267,17 @@ class DatabaseService {
   async addMeter(meter: Omit<Meter, 'id'>): Promise<Meter | null> {
     try {
       this.lastError = null;
+      
+      // Wenn wir im Datenbank-Modus sind aber keine Verbindung besteht,
+      // versuche eine Verbindung herzustellen
+      if (!this.useLocalStorage && !this.isConnected) {
+        const connected = await this.testConnection();
+        if (!connected) {
+          this.lastError = "Keine Datenbankverbindung: Zähler konnte nicht gespeichert werden";
+          return null;
+        }
+      }
+      
       const id = crypto.randomUUID();
       
       // Neuer Zähler mit ID
@@ -249,8 +302,9 @@ class DatabaseService {
       } else {
         console.log('Datenbank: Füge Zähler hinzu:', newMeter);
         
-        // Simuliere Datenbankoperation
-        // In einer echten Anwendung würden wir hier den Zähler in die Datenbank einfügen
+        // In einer realen Anwendung würden wir hier eine SQL-Anweisung ausführen
+        // z.B.: INSERT INTO meters (id, name, unit, is_active, notes) VALUES (...)
+        
         // Im simulierten Modus verwenden wir den lokalen Speicher
         const localMeters = loadLocalMeters();
         localMeters.push(newMeter);
@@ -274,10 +328,22 @@ class DatabaseService {
     try {
       this.lastError = null;
       
+      // Wenn wir im Datenbank-Modus sind aber keine Verbindung besteht,
+      // versuche eine Verbindung herzustellen
+      if (!this.useLocalStorage && !this.isConnected) {
+        const connected = await this.testConnection();
+        if (!connected) {
+          this.lastError = "Keine Datenbankverbindung: Zähler konnte nicht aktualisiert werden";
+          return false;
+        }
+      }
+      
       if (this.useLocalStorage) {
         console.log('Lokaler Speicher: Aktualisiere Zähler:', meter);
       } else {
         console.log('Datenbank: Aktualisiere Zähler:', meter);
+        // In einer realen Anwendung würden wir hier eine SQL-Anweisung ausführen
+        // z.B.: UPDATE meters SET name = ?, unit = ?, ... WHERE id = ?
       }
       
       // Hole vorhandene Zähler
