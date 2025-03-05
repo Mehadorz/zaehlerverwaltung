@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import { databaseService, DbConfig } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
 import { DatabaseIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 interface DbConfigDialogProps {
   onConfigChange: () => void;
@@ -37,6 +38,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   
   const [config, setConfig] = useState<DbConfig>(savedConfig);
 
+  // Handler für Änderungen der Konfigurationsfelder
   const handleChange = (field: keyof DbConfig, value: string) => {
     setConfigError(null);
     setConfig(prev => ({
@@ -45,6 +47,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
     }));
   };
 
+  // Validierung der Konfigurationsdaten
   const validateConfig = (): boolean => {
     if (!config.host || config.host.trim() === '') {
       setConfigError("Bitte geben Sie einen Host an");
@@ -74,6 +77,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
     return true;
   };
 
+  // Handler für das Speichern der Konfiguration
   const handleSave = async () => {
     if (!validateConfig()) {
       return;
@@ -83,25 +87,31 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
     setConfigError(null);
     
     try {
+      // Konfiguration speichern
       databaseService.setConfig(config);
       
+      // Feedback für den Benutzer
       toast({
         title: "Konfiguration gespeichert",
         description: "Prüfe Verbindung mit den neuen Einstellungen...",
         duration: 2000,
       });
       
+      // Verbindungstest durchführen
       const connected = await databaseService.testConnection();
       
       if (connected) {
+        // Bei erfolgreicher Verbindung
         toast({
           title: "Verbindung erfolgreich",
           description: "Die Datenbankverbindung wurde erfolgreich eingerichtet.",
           duration: 3000,
         });
         
+        // Dialog schließen
         setOpen(false);
       } else {
+        // Bei Verbindungsfehler
         const errorMsg = databaseService.getLastError() || "Unbekannter Fehler";
         setConfigError(errorMsg);
         toast({
@@ -112,6 +122,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
         });
       }
     } catch (error) {
+      // Bei unerwarteten Fehlern
       toast({
         title: "Fehler",
         description: "Beim Speichern der Konfiguration ist ein Fehler aufgetreten.",
@@ -120,7 +131,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
       });
     } finally {
       setIsSaving(false);
-      onConfigChange();
+      onConfigChange(); // Benachrichtigung an die übergeordnete Komponente
     }
   };
 
@@ -151,6 +162,20 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               <AlertDescription>{configError}</AlertDescription>
             </Alert>
           )}
+          
+          {/* Empfohlene Konfiguration */}
+          <Alert variant="default" className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-xs text-blue-700">
+              <strong>Empfohlene Konfiguration für Demo:</strong><br/>
+              Host: localhost<br/>
+              Port: 3306<br/>
+              Benutzername: meter_user<br/>
+              Passwort: meter_password<br/>
+              Datenbank: meter_db
+            </AlertDescription>
+          </Alert>
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="host" className="text-right">
               Host
@@ -160,6 +185,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               value={config.host}
               onChange={(e) => handleChange('host', e.target.value)}
               className="col-span-3"
+              placeholder="localhost"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -172,6 +198,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               value={config.port}
               onChange={(e) => handleChange('port', e.target.value)}
               className="col-span-3"
+              placeholder="3306"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -183,6 +210,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               value={config.username}
               onChange={(e) => handleChange('username', e.target.value)}
               className="col-span-3"
+              placeholder="meter_user"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -195,6 +223,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               value={config.password}
               onChange={(e) => handleChange('password', e.target.value)}
               className="col-span-3"
+              placeholder="•••••••••"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -206,6 +235,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
               value={config.database}
               onChange={(e) => handleChange('database', e.target.value)}
               className="col-span-3"
+              placeholder="meter_db"
             />
           </div>
         </div>

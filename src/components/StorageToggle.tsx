@@ -22,30 +22,48 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
 
   // Lade die gespeicherte Einstellung beim Start
   useEffect(() => {
-    // Lade die gespeicherte Speichereinstellung
-    const savedPreference = localStorage.getItem("storagePreference");
-    if (savedPreference) {
-      const shouldUseDatabase = JSON.parse(savedPreference);
-      setUseDatabase(shouldUseDatabase);
+    const init = async () => {
+      // Lade die gespeicherte Speichereinstellung
+      const savedPreference = localStorage.getItem("storagePreference");
+      if (savedPreference) {
+        const shouldUseDatabase = JSON.parse(savedPreference);
+        setUseDatabase(shouldUseDatabase);
+        
+        // Lade gespeicherte DB-Konfiguration, falls vorhanden
+        const config = databaseService.loadConfig();
+        if (config) {
+          databaseService.setConfig(config);
+          
+          // Wenn Datenbank ausgewählt wurde, Verbindung prüfen
+          if (shouldUseDatabase) {
+            await checkDatabaseConnection();
+          }
+        }
+      }
+    };
+    
+    init();
+  }, []);
+
+  // Aktualisiere den Verbindungsstatus regelmäßig
+  useEffect(() => {
+    // Aktualisiere den Verbindungsstatus wenn useDatabase aktiv ist
+    if (useDatabase) {
+      setIsConnected(databaseService.isDbConnected());
       
-      // Wenn Datenbank ausgewählt wurde, Verbindung prüfen
-      if (shouldUseDatabase) {
+      // Prüfe den Status erneut, wenn nicht verbunden
+      if (!databaseService.isDbConnected()) {
         checkDatabaseConnection();
       }
     }
-    
-    // Lade gespeicherte DB-Konfiguration, falls vorhanden
-    const config = databaseService.loadConfig();
-    if (config) {
-      databaseService.setConfig(config);
-    }
-  }, []);
+  }, [useDatabase]);
 
-  // Prüfe die Datenbankverbindung wenn useDatabase aktiviert wird
+  // Prüfe die Datenbankverbindung
   const checkDatabaseConnection = async () => {
     setConnectionError(null);
     setIsCheckingConnection(true);
     try {
+      console.log("Prüfe Datenbankverbindung...");
       const connected = await databaseService.testConnection();
       setIsConnected(connected);
       
@@ -53,6 +71,8 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
         const errorMsg = databaseService.getLastError();
         setConnectionError(errorMsg);
         console.error("Verbindungsfehler:", errorMsg);
+      } else {
+        console.log("Datenbankverbindung erfolgreich hergestellt");
       }
       
       return connected;
@@ -84,7 +104,6 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
           duration: 5000,
         });
         setUseDatabase(false);
-        setIsCheckingConnection(false);
         return;
       }
       
@@ -108,10 +127,24 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
   };
 
   // Handler für Konfigurationsänderungen
-  const handleConfigChange = () => {
+  const handleConfigChange = async () => {
+    // Nach Konfigurationsänderung immer den Verbindungsstatus prüfen
     if (useDatabase) {
       // Teste die Verbindung mit den neuen Einstellungen
-      checkDatabaseConnection();
+      const connected = await checkDatabaseConnection();
+      
+      // Wenn keine Verbindung hergestellt werden konnte, schalte auf lokalen Speicher zurück
+      if (!connected) {
+        setUseDatabase(false);
+        localStorage.setItem("storagePreference", JSON.stringify(false));
+        onStorageChange(false);
+        
+        toast({
+          title: "Lokale Speicherung aktiviert",
+          description: "Keine Verbindung zur Datenbank möglich. Die Daten werden lokal gespeichert.",
+          duration: 3000,
+        });
+      }
     }
   };
 
