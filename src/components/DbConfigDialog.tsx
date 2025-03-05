@@ -103,14 +103,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           <DialogTitle>Datenbank Konfiguration</DialogTitle>
           <DialogDescription>
             Bitte geben Sie die Verbindungsdaten für Ihre Datenbank ein.
-            <div className="mt-2 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
-              <strong>Hinweis:</strong> Für die Demo sind nur folgende Zugangsdaten gültig:<br />
-              Host: localhost, 127.0.0.1 oder db<br />
-              Port: beliebig zwischen 1-65535<br />
-              Benutzername: meter_user<br />
-              Passwort: meter_password<br />
-              Datenbank: meter_db
-            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

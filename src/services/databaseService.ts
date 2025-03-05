@@ -72,11 +72,9 @@ class DatabaseService {
       // Simuliere einen echten Verbindungstest mit Validierung der Eingabedaten
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Überprüfe die Verbindungsdaten auf Gültigkeit (simuliert)
+      // Überprüfe nur Host und Port auf Gültigkeit (simuliert)
       const isValidHost = this.validateHost(this.dbConfig.host);
       const isValidPort = this.validatePort(this.dbConfig.port);
-      const isValidCredentials = this.validateCredentials(this.dbConfig.username, this.dbConfig.password);
-      const isValidDatabase = this.validateDatabase(this.dbConfig.database);
       
       if (!isValidHost) {
         this.lastError = "Ungültiger Host-Name oder Host nicht erreichbar";
@@ -90,14 +88,23 @@ class DatabaseService {
         return false;
       }
       
-      if (!isValidCredentials) {
-        this.lastError = "Ungültige Zugangsdaten (Benutzername/Passwort)";
+      // Benutzername, Passwort und Datenbankname werden nicht mehr validiert
+      // Wir akzeptieren alle Werte, solange sie nicht leer sind
+      
+      if (!this.dbConfig.username || this.dbConfig.username.trim() === '') {
+        this.lastError = "Benutzername darf nicht leer sein";
         this.useLocalStorage = true;
         return false;
       }
       
-      if (!isValidDatabase) {
-        this.lastError = "Datenbank nicht vorhanden oder keine Zugriffsrechte";
+      if (!this.dbConfig.password || this.dbConfig.password.trim() === '') {
+        this.lastError = "Passwort darf nicht leer sein";
+        this.useLocalStorage = true;
+        return false;
+      }
+      
+      if (!this.dbConfig.database || this.dbConfig.database.trim() === '') {
+        this.lastError = "Datenbankname darf nicht leer sein";
         this.useLocalStorage = true;
         return false;
       }
@@ -154,34 +161,22 @@ class DatabaseService {
 
   /**
    * Validiere die Zugangsdaten (simuliert)
-   * @param username Benutzername
-   * @param password Passwort
-   * @returns True wenn die Zugangsdaten gültig sind
+   * Diese Methode wird nicht mehr verwendet, da wir alle Benutzername/Passwort-Kombinationen akzeptieren
+   * @private
    */
   private validateCredentials(username: string, password: string): boolean {
-    // Prüfe, dass Benutzername und Passwort mindestens 3 Zeichen lang sind
-    if (username.trim().length < 3) return false;
-    if (password.length < 3) return false;
-    
-    // Beispielvalidierung: meter_user/meter_password ist korrekt
-    if (username === 'meter_user' && password === 'meter_password') return true;
-    
-    // In einer realen Anwendung würden wir hier eine tatsächliche Authentifizierung durchführen
-    // Für Testzwecke akzeptieren wir nur meter_user/meter_password als gültige Kombination
-    return false;
+    // Diese Methode wird nicht mehr verwendet
+    return true;
   }
 
   /**
    * Validiere die Datenbank (simuliert)
-   * @param database Datenbankname
-   * @returns True wenn die Datenbank gültig ist
+   * Diese Methode wird nicht mehr verwendet, da wir alle Datenbanknamen akzeptieren
+   * @private
    */
   private validateDatabase(database: string): boolean {
-    // Prüfe, dass der Datenbankname mindestens 3 Zeichen lang ist
-    if (database.trim().length < 3) return false;
-    
-    // Beispielvalidierung: meter_db ist korrekt
-    return database === 'meter_db';
+    // Diese Methode wird nicht mehr verwendet
+    return true;
   }
 
   /**
