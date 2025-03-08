@@ -1,4 +1,3 @@
-
 import { DbConfig, Meter, Reading } from './types';
 import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
@@ -13,27 +12,35 @@ class DatabaseService {
   private mockDataEnabled = true; // Im Browsermodus aktivieren wir Mock-Daten
   private useLocalStorage = true; // Flag, ob lokaler Speicher verwendet werden soll
   private isConnected = false; // Flag für den Verbindungsstatus
+  private connectionValidated = false; // Flag, ob die Verbindung bereits validiert wurde
 
   /**
    * Setze Konfiguration für die Datenbankverbindung
    * @param config Datenbank-Konfiguration
    */
   setConfig(config: DbConfig) {
+    // Wenn sich die Konfiguration ändert, setzen wir den Verbindungsstatus zurück
+    if (this.dbConfig && 
+        (this.dbConfig.host !== config.host || 
+         this.dbConfig.port !== config.port || 
+         this.dbConfig.username !== config.username || 
+         this.dbConfig.password !== config.password || 
+         this.dbConfig.database !== config.database)) {
+      this.isConnected = false;
+      this.connectionValidated = false;
+    }
+    
     this.dbConfig = config;
     
     // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
-
-    // Nach dem Setzen der Konfiguration setzen wir die Verbindung zurück
-    // Ein erneuter Verbindungstest muss durchgeführt werden
-    this.isConnected = false;
     
     console.log('Datenbank-Konfiguration aktualisiert:', {
       host: config.host,
       port: config.port,
       database: config.database,
       username: config.username,
-      useLocalStorage: this.useLocalStorage
+      connectionValidated: this.connectionValidated
     });
   }
 
@@ -63,7 +70,7 @@ class DatabaseService {
    * @returns True, wenn verbunden
    */
   isDbConnected(): boolean {
-    return this.isConnected;
+    return this.isConnected && this.connectionValidated;
   }
 
   /**
@@ -75,6 +82,7 @@ class DatabaseService {
       if (!this.dbConfig) {
         this.lastError = "Die Datenbank-Konfiguration wurde nicht gesetzt";
         this.isConnected = false;
+        this.connectionValidated = false;
         this.useLocalStorage = true; // Fallback auf lokalen Speicher
         return false;
       }
@@ -89,20 +97,18 @@ class DatabaseService {
       // Durchführen eines Pseudo-Verbindungstests
       const canConnect = await this.simulateDbConnection();
       
-      if (!canConnect) {
-        // Verbindungstest fehlgeschlagen, verbleibe im lokalen Modus
-        this.useLocalStorage = true;
-        this.isConnected = false;
-        console.log('Verbindungstest fehlgeschlagen, verbleibe im lokalen Modus', this.lastError);
-        return false;
-      }
+      // Setze die Verbindungsflags basierend auf dem Ergebnis
+      this.isConnected = canConnect;
+      this.connectionValidated = true;
+      this.useLocalStorage = !canConnect;
       
-      // Verbindungstest erfolgreich, setzen wir useLocalStorage auf false
-      this.useLocalStorage = false;
-      this.isConnected = true;
+      console.log('Verbindungstest abgeschlossen:', {
+        isConnected: this.isConnected,
+        useLocalStorage: this.useLocalStorage,
+        lastError: this.lastError
+      });
       
-      console.log('Verbindungstest erfolgreich, Datenbankmodus aktiviert, useLocalStorage:', this.useLocalStorage);
-      return true;
+      return canConnect;
     } catch (error) {
       if (error instanceof Error) {
         this.lastError = `Verbindungsfehler: ${error.message}`;
@@ -111,8 +117,9 @@ class DatabaseService {
       }
       
       // Bei Verbindungsfehler wieder auf lokalen Speicher umschalten
-      this.useLocalStorage = true;
       this.isConnected = false;
+      this.connectionValidated = true;
+      this.useLocalStorage = true;
       
       console.error('Datenbank-Verbindungsfehler:', this.lastError, 'Verwende lokalen Speicher:', this.useLocalStorage);
       return false;
@@ -121,7 +128,7 @@ class DatabaseService {
 
   /**
    * Simuliert eine Datenbankverbindung
-   * HINWEIS: Hier würde normalerweise eine echte Verbindungsprüfung stattfinden
+   * Für eine Demo-Anwendung müssen wir die Datenbankverbindung simulieren
    * @returns Promise<boolean> - True bei erfolgreicher Verbindung
    */
   private async simulateDbConnection(): Promise<boolean> {
@@ -153,86 +160,73 @@ class DatabaseService {
       return false;
     }
     
-    // In einer Demo-Umgebung simulieren wir, dass nur bestimmte Hosts erreichbar sind
-    // In einer Produktionsumgebung würde hier eine echte Verbindungsprüfung stattfinden
+    // Für die Demo-Anwendung definieren wir spezifische Verbindungsregeln
     
-    // Im Demo-Modus: Für Testzwecke zulässige Hosts
-    const validHosts = ['localhost', '127.0.0.1', 'db', 'database', 'mysql'];
+    // Demo-Modus: Wir akzeptieren bestimmte Kombinationen für erfolgreiche Verbindungen
+    const VALID_CREDENTIALS = [
+      // Format: [host, port, username, password, database]
+      ['localhost', 3306, 'meter_user', 'meter_password', 'meter_db'],
+      ['127.0.0.1', 3306, 'meter_user', 'meter_password', 'meter_db'],
+      ['db', 3306, 'admin', 'admin123', 'meter_db'],
+      ['mysql', 3306, 'root', 'root_password', 'meters'],
+      ['database', 3306, 'dba', 'dbpass', 'metrics']
+    ];
+
+    // Überprüfe, ob die eingegebenen Zugangsdaten mit einer der gültigen Kombinationen übereinstimmen
+    const matchingCreds = VALID_CREDENTIALS.find(creds => 
+      creds[0] === this.dbConfig!.host && 
+      creds[1] === this.dbConfig!.port &&
+      creds[2] === this.dbConfig!.username && 
+      creds[3] === this.dbConfig!.password && 
+      creds[4] === this.dbConfig!.database
+    );
     
-    // Teste tatsächliche Verbindung (simuliert für Demo)
-    const isValidHost = validHosts.includes(this.dbConfig.host.toLowerCase());
+    if (matchingCreds) {
+      console.log('Verbindung erfolgreich mit vordefinierten Zugangsdaten:', matchingCreds[0]);
+      return true;
+    }
     
-    // Überprüfe, ob es sich um eine IP-Adresse handelt
-    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const isIPAddress = ipPattern.test(this.dbConfig.host);
-    
-    if (isValidHost) {
-      // Bekannte Hosts sind immer erreichbar (in der Demo)
-      console.log(`Verbindung zu bekanntem Host ${this.dbConfig.host} erfolgreich simuliert`);
-      
-      // Simuliere, dass die Anmeldedaten geprüft werden
-      // In einer echten Anwendung würde hier mit den Anmeldedaten eine Verbindung getestet
-      
-      // Nur für die Demo: Prüfe Kombination von Benutzername und Passwort für localhost/127.0.0.1
-      if ((this.dbConfig.host === 'localhost' || this.dbConfig.host === '127.0.0.1') && 
-          this.dbConfig.username === 'meter_user' && 
-          this.dbConfig.password === 'meter_password') {
-        return true;
-      }
-      
-      // Für die Demo-Implementierung: Zufällig Erfolg/Fehler für andere Anmeldedaten
-      const randomSuccess = Math.random() > 0.3; // 70% Erfolgsrate
-      
-      if (!randomSuccess) {
-        this.lastError = `Anmeldung fehlgeschlagen: Benutzername oder Passwort ungültig`;
+    // Gebe spezifische Fehlermeldungen aus, je nachdem was nicht übereinstimmt
+    if (this.dbConfig.host === 'localhost' || this.dbConfig.host === '127.0.0.1') {
+      if (this.dbConfig.port !== 3306) {
+        this.lastError = `Verbindung zu ${this.dbConfig.host} fehlgeschlagen: Port 3306 wird erwartet`;
         return false;
       }
       
-      return true;
-    } else if (isIPAddress) {
-      // Prüfe, ob es sich um eine lokale IP handelt
+      if (this.dbConfig.username !== 'meter_user' || this.dbConfig.password !== 'meter_password') {
+        this.lastError = `Anmeldung an ${this.dbConfig.host} fehlgeschlagen: Falsche Anmeldedaten`;
+        return false;
+      }
+      
+      if (this.dbConfig.database !== 'meter_db') {
+        this.lastError = `Datenbank '${this.dbConfig.database}' nicht gefunden auf ${this.dbConfig.host}`;
+        return false;
+      }
+    }
+    
+    // Teste auf lokale IP-Adressen (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const isIPAddress = ipPattern.test(this.dbConfig.host);
+    
+    if (isIPAddress) {
       const ipParts = this.dbConfig.host.split('.');
       const firstOctet = parseInt(ipParts[0]);
       
       const isLocalIP = firstOctet === 192 || firstOctet === 10 || 
-                        (firstOctet === 172 && parseInt(ipParts[1]) >= 16 && parseInt(ipParts[1]) <= 31) ||
-                        this.dbConfig.host === '127.0.0.1';
-      
+                        (firstOctet === 172 && parseInt(ipParts[1]) >= 16 && parseInt(ipParts[1]) <= 31);
+                        
       if (isLocalIP) {
-        console.log(`Verbindung zu lokaler IP ${this.dbConfig.host} simuliert`);
-        // Für lokale IPs: überprüfe die Anmeldedaten (simuliert)
-        
-        // Für die Demo-Implementierung: Zufällig Erfolg/Fehler
-        const randomSuccess = Math.random() > 0.3; // 70% Erfolgsrate
-        
-        if (!randomSuccess) {
-          this.lastError = `Anmeldung fehlgeschlagen: Benutzername oder Passwort ungültig`;
-          return false;
-        }
-        
-        return true;
-      }
-      
-      // Für andere IPs simulieren wir eine 50/50 Chance auf Erfolg/Fehler
-      const canConnect = Math.random() > 0.5;
-      
-      if (!canConnect) {
+        this.lastError = `Verbindung zu ${this.dbConfig.host} fehlgeschlagen: Keine Datenbank erreicht. Verwende für eine Demo 'localhost' mit den empfohlenen Zugangsdaten.`;
+        return false;
+      } else {
         this.lastError = `Verbindung zu ${this.dbConfig.host} konnte nicht hergestellt werden (Zeitüberschreitung)`;
         return false;
       }
-      
-      return true;
-    } else {
-      // Bei Domain-Namen simulieren wir eine 50/50 Chance auf Erfolg/Fehler
-      const canConnect = Math.random() > 0.5;
-      
-      if (!canConnect) {
-        this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar`;
-        return false;
-      }
-      
-      return true;
     }
+    
+    // Für alle anderen Hosts
+    this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar oder ungültige Zugangsdaten`;
+    return false;
   }
 
   /**
@@ -257,7 +251,7 @@ class DatabaseService {
         return generateMockMeters();
       } else {
         // Wichtig: Überprüfe, ob wir tatsächlich verbunden sind
-        if (!this.isConnected) {
+        if (!this.isConnected || !this.connectionValidated) {
           console.log('Nicht mit Datenbank verbunden, teste Verbindung...');
           const connected = await this.testConnection();
           if (!connected) {

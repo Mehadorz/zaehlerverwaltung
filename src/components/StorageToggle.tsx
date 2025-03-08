@@ -36,7 +36,20 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
           
           // Wenn Datenbank ausgewählt wurde, Verbindung prüfen
           if (shouldUseDatabase) {
-            await checkDatabaseConnection();
+            const connected = await checkDatabaseConnection();
+            
+            // Falls keine Verbindung hergestellt werden konnte, auf lokalen Speicher zurückschalten
+            if (!connected) {
+              setUseDatabase(false);
+              localStorage.setItem("storagePreference", JSON.stringify(false));
+              onStorageChange(false);
+              
+              toast({
+                title: "Zur lokalen Speicherung gewechselt",
+                description: "Die gespeicherte Datenbankkonfiguration konnte nicht verbunden werden.",
+                duration: 3000,
+              });
+            }
           }
         }
       }
@@ -45,18 +58,36 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
     init();
   }, []);
 
-  // Aktualisiere den Verbindungsstatus regelmäßig
+  // Aktualisiere den Verbindungsstatus regelmäßig wenn Datenbank aktiv ist
   useEffect(() => {
-    // Aktualisiere den Verbindungsstatus wenn useDatabase aktiv ist
+    let interval: number | undefined;
+    
     if (useDatabase) {
+      // Initial den Status setzen
       setIsConnected(databaseService.isDbConnected());
       
-      // Prüfe den Status erneut, wenn nicht verbunden
-      if (!databaseService.isDbConnected()) {
-        checkDatabaseConnection();
-      }
+      // Prüfe den Status regelmäßig
+      interval = window.setInterval(() => {
+        const connected = databaseService.isDbConnected();
+        setIsConnected(connected);
+        
+        // Wenn die Verbindung verloren geht, eine Meldung anzeigen
+        if (!connected && isConnected) {
+          setConnectionError(databaseService.getLastError() || "Verbindung verloren");
+          toast({
+            title: "Datenbankverbindung verloren",
+            description: "Die Verbindung zur Datenbank wurde unterbrochen.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      }, 5000); // Alle 5 Sekunden prüfen
     }
-  }, [useDatabase]);
+    
+    return () => {
+      if (interval) window.clearInterval(interval);
+    };
+  }, [useDatabase, isConnected, toast]);
 
   // Prüfe die Datenbankverbindung
   const checkDatabaseConnection = async () => {

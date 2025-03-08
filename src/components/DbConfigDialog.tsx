@@ -30,7 +30,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   
   const savedConfig = databaseService.loadConfig() || {
     host: "localhost",
-    port: 3000,
+    port: 3306,  // Standardport für MySQL
     username: "meter_user",
     password: "meter_password",
     database: "meter_db"
@@ -149,9 +149,8 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           <DialogDescription>
             Bitte geben Sie die Verbindungsdaten für Ihre Datenbank ein.
             <div className="mt-2 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
-              <strong>Hinweis:</strong> Für eine echte Verbindung müsste ein 
-              Datenbankserver auf dem angegebenen Host und Port erreichbar sein.
-              In dieser Demo-Version wird die Verbindung simuliert.
+              <strong>Hinweis:</strong> Für diese Demo-Version werden nur bestimmte vordefinierte 
+              Verbindungskonfigurationen akzeptiert. Verwenden Sie die empfohlene Konfiguration unten.
             </div>
           </DialogDescription>
         </DialogHeader>
