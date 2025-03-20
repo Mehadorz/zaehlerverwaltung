@@ -69,6 +69,9 @@ export function useMeterData() {
   // State für den Filterstatus
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   
+  // State für den Ladezustand
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Toast-Hook für Benachrichtigungen
   const { toast } = useToast();
 
@@ -87,14 +90,19 @@ export function useMeterData() {
      * Bei Fehlern wird eine Toast-Benachrichtigung angezeigt
      */
     const loadMeters = async () => {
+      setIsLoading(true);
       try {
+        console.log(`Lade Zähler, verwende ${useDatabase ? 'Datenbank' : 'lokale Speicherung'}...`);
+        
         if (useDatabase) {
           // Zähler aus der Datenbank laden
           const dbMeters = await databaseService.getAllMeters();
+          console.log('Aus Datenbank geladene Zähler:', dbMeters);
           setMeters(dbMeters);
         } else {
           // Zähler aus dem lokalen Speicher laden
           const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
+          console.log('Aus lokalem Speicher geladene Zähler:', localMeters);
           setMeters(localMeters);
         }
       } catch (error) {
@@ -105,6 +113,8 @@ export function useMeterData() {
           variant: "destructive",
           duration: 5000,
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -113,11 +123,12 @@ export function useMeterData() {
 
   // Effekt zum Speichern von Änderungen im lokalen Speicher
   useEffect(() => {
-    // Nur speichern, wenn lokaler Speicher verwendet wird
-    if (!useDatabase) {
+    // Nur speichern, wenn lokaler Speicher verwendet wird und nicht im Ladezustand
+    if (!useDatabase && !isLoading) {
+      console.log('Speichere Zähler im lokalen Speicher:', meters);
       localStorage.setItem("meters", JSON.stringify(meters));
     }
-  }, [meters, useDatabase]);
+  }, [meters, useDatabase, isLoading]);
 
   // Rückgabe aller Zustandsvariablen und Setter
   return {
@@ -126,6 +137,7 @@ export function useMeterData() {
     useDatabase,
     dateRange,
     filterStatus,
+    isLoading,
     setUseDatabase,
     setDateRange,
     setFilterStatus,

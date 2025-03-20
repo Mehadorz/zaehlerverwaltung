@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,9 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { databaseService, DbConfig } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
-import { DatabaseIcon } from "lucide-react";
+import { DatabaseIcon, AlertTriangle, Info, Server } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Info } from "lucide-react";
 
 interface DbConfigDialogProps {
   onConfigChange: () => void;
@@ -27,6 +26,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   
   const savedConfig = databaseService.loadConfig() || {
     host: "localhost",
@@ -38,9 +38,23 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
   
   const [config, setConfig] = useState<DbConfig>(savedConfig);
 
+  // Effekt zum Laden des Verbindungsstatus beim Öffnen des Dialogs
+  useEffect(() => {
+    const checkConnection = async () => {
+      if (open && databaseService.isDbConnected()) {
+        setConnectionStatus("Verbunden mit Datenbank");
+      } else if (open) {
+        setConnectionStatus(null);
+      }
+    };
+    
+    checkConnection();
+  }, [open]);
+
   // Handler für Änderungen der Konfigurationsfelder
   const handleChange = (field: keyof DbConfig, value: string) => {
     setConfigError(null);
+    setConnectionStatus(null);
     setConfig(prev => ({
       ...prev,
       [field]: field === 'port' ? parseInt(value) || 0 : value
@@ -85,6 +99,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
     
     setIsSaving(true);
     setConfigError(null);
+    setConnectionStatus(null);
     
     try {
       // Konfiguration speichern
@@ -102,6 +117,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
       
       if (connected) {
         // Bei erfolgreicher Verbindung
+        setConnectionStatus("Verbunden mit Datenbank");
         toast({
           title: "Verbindung erfolgreich",
           description: "Die Datenbankverbindung wurde erfolgreich eingerichtet.",
@@ -114,6 +130,7 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
         // Bei Verbindungsfehler
         const errorMsg = databaseService.getLastError() || "Unbekannter Fehler";
         setConfigError(errorMsg);
+        setConnectionStatus("Keine Verbindung möglich");
         toast({
           title: "Verbindungsproblem",
           description: errorMsg,
@@ -155,6 +172,15 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          {connectionStatus && (
+            <Alert variant="default" className="bg-green-50 border-green-200">
+              <Server className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-xs text-green-700">
+                <strong>{connectionStatus}</strong>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {configError && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />

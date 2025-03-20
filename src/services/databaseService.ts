@@ -1,3 +1,4 @@
+
 import { DbConfig, Meter, Reading } from './types';
 import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
@@ -84,29 +85,36 @@ class DatabaseService {
       const localMeters = loadLocalMeters();
       this.dbStorage.set('meters', JSON.parse(JSON.stringify(localMeters)));
       console.log('DB-Speicherung initialisiert mit lokalen Daten:', localMeters.length, 'Zähler');
+      
+      // Speichern wir den initialisierten DB-Zustand auch im localStorage
+      this.saveDbStateToPersistentStorage();
     }
   }
 
   /**
    * Speichert den aktuellen Zustand der simulierten DB im LocalStorage
-   * Nur zu Debug-Zwecken für die Demo-Anwendung
+   * Damit wir bei einem Page Refresh die "Datenbank-Daten" erhalten
    */
   private saveDbStateToPersistentStorage(): void {
     if (this.dbStorage.has('meters')) {
-      localStorage.setItem('db_meters', JSON.stringify(this.dbStorage.get('meters')));
-      console.log('DB-Status im LocalStorage gespeichert (nur für Debug-Zwecke)');
+      const metersToSave = this.dbStorage.get('meters');
+      localStorage.setItem('db_meters', JSON.stringify(metersToSave));
+      console.log('DB-Status im LocalStorage gespeichert mit', metersToSave.length, 'Zählern');
     }
   }
 
   /**
    * Lädt den gespeicherten DB-Zustand aus dem LocalStorage
-   * Nur zu Debug-Zwecken für die Demo-Anwendung
+   * Damit wir bei einem Page Refresh die "Datenbank-Daten" erhalten
    */
   private loadDbStateFromPersistentStorage(): void {
     const savedDbState = localStorage.getItem('db_meters');
     if (savedDbState) {
-      this.dbStorage.set('meters', JSON.parse(savedDbState));
-      console.log('DB-Status aus LocalStorage geladen (nur für Debug-Zwecke)');
+      const parsedData = JSON.parse(savedDbState);
+      this.dbStorage.set('meters', parsedData);
+      console.log('DB-Status aus LocalStorage geladen mit', parsedData.length, 'Zählern');
+    } else {
+      console.log('Kein gespeicherter DB-Status gefunden');
     }
   }
 
@@ -141,7 +149,9 @@ class DatabaseService {
       
       // Bei erfolgreicher Verbindung die DB-Speicherung initialisieren
       if (canConnect) {
+        // Lade zuerst gespeicherte DB-Daten, wenn vorhanden
         this.loadDbStateFromPersistentStorage();
+        // Dann initialisiere mit lokalen Daten, falls DB leer ist
         this.initDbStorage();
       }
       
@@ -312,6 +322,7 @@ class DatabaseService {
         // Verwende die simulierte DB-Speicherung statt des lokalen Speichers
         if (!this.dbStorage.has('meters')) {
           // Initialisiere, falls noch nicht geschehen
+          this.loadDbStateFromPersistentStorage();
           this.initDbStorage();
         }
         
