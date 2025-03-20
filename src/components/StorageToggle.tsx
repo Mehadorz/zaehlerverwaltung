@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -237,7 +236,7 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
       </div>
       
       {storageStatus && (
-        <Alert variant={useDatabase && isConnected ? "default" : "outline"} 
+        <Alert variant={useDatabase && isConnected ? "default" : "default"} 
                className={`mt-2 ${useDatabase && isConnected ? "bg-blue-50 border-blue-200" : "bg-gray-50"}`}>
           {useDatabase && isConnected ? (
             <Database className="h-4 w-4 text-blue-500" />
