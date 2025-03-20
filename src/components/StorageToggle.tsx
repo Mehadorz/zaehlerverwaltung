@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Database } from "lucide-react";
 import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
 import { DbConfigDialog } from "@/components/DbConfigDialog";
@@ -18,6 +18,7 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [lastSavedStatus, setLastSavedStatus] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Lade die gespeicherte Einstellung beim Start
@@ -49,6 +50,10 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
                 description: "Die gespeicherte Datenbankkonfiguration konnte nicht verbunden werden.",
                 duration: 3000,
               });
+            } else {
+              // Zeige Status "Verbunden mit Datenbank"
+              setLastSavedStatus("Daten werden in der Datenbank gespeichert");
+              setTimeout(() => setLastSavedStatus(null), 3000);
             }
           }
         }
@@ -143,12 +148,18 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
         description: "Erfolgreich mit der Datenbank verbunden. Daten werden in der Datenbank gespeichert.",
         duration: 3000,
       });
+      
+      setLastSavedStatus("Daten werden in der Datenbank gespeichert");
+      setTimeout(() => setLastSavedStatus(null), 3000);
     } else {
       toast({
         title: "Lokale Speicherung aktiviert",
         description: "Die Daten werden jetzt lokal im Browser gespeichert.",
         duration: 3000,
       });
+      
+      setLastSavedStatus("Daten werden lokal im Browser gespeichert");
+      setTimeout(() => setLastSavedStatus(null), 3000);
     }
 
     // Speichere die Präferenz und informiere die übergeordnete Komponente
@@ -175,6 +186,10 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
           description: "Keine Verbindung zur Datenbank möglich. Die Daten werden lokal gespeichert.",
           duration: 3000,
         });
+      } else {
+        // Bei erfolgreicher Verbindung
+        setLastSavedStatus("Daten werden in der Datenbank gespeichert");
+        setTimeout(() => setLastSavedStatus(null), 3000);
       }
     }
   };
@@ -214,6 +229,15 @@ export const StorageToggle = ({ onStorageChange }: StorageToggleProps) => {
         
         <DbConfigDialog onConfigChange={handleConfigChange} />
       </div>
+      
+      {lastSavedStatus && (
+        <Alert variant="default" className="mt-2 bg-blue-50 border-blue-200">
+          <Database className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-xs text-blue-700">
+            {lastSavedStatus}
+          </AlertDescription>
+        </Alert>
+      )}
       
       {useDatabase && connectionError && (
         <Alert variant="destructive" className="mt-2">
