@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
@@ -6,7 +5,7 @@ import { useConnectionChecker } from "./useConnectionChecker";
 import { useStorageStatus } from "./useStorageStatus";
 import { StorageStatus } from "./types";
 
-export { StorageStatus };
+export type { StorageStatus };
 
 /**
  * Hook that manages storage preference between local storage and database
