@@ -51,13 +51,13 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
         // Ensure explicit update to parent component
         onStorageChange(shouldUseDatabase);
         
-        // Load saved DB configuration if available
-        const config = databaseService.loadConfig();
-        if (config) {
-          databaseService.setConfig(config);
-          
-          // Check connection if database is selected
-          if (shouldUseDatabase) {
+        if (shouldUseDatabase) {
+          // Load saved DB configuration if available
+          const config = databaseService.loadConfig();
+          if (config) {
+            databaseService.setConfig(config);
+            
+            // Check connection if database is selected
             console.log("Prüfe gespeicherte Datenbankverbindung...");
             const connected = await checkConnection();
             
@@ -80,6 +80,9 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
               console.log("Datenbank erfolgreich verbunden. Daten werden in der Datenbank gespeichert.");
             }
           }
+        } else {
+          // If database is not selected, ensure we're using local storage
+          onStorageChange(false);
         }
       } else {
         // If no preference set, default to local storage
@@ -199,10 +202,9 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     console.log("Datenbank-Konfiguration wurde geändert");
     
     // Always check connection status after configuration changes
+    const connected = await checkConnection();
+    
     if (useDatabase) {
-      // Test connection with new settings
-      const connected = await checkConnection();
-      
       // Fall back to local storage if connection fails
       if (!connected) {
         setUseDatabase(false);
@@ -225,6 +227,18 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
         });
         onStorageChange(true);
       }
+    } else if (connected) {
+      // If connection test was successful but we're not using database,
+      // ask user if they want to switch to database
+      toast({
+        title: "Datenbankverbindung verfügbar",
+        description: "Möchten Sie zur Datenbankspeicherung wechseln?",
+        action: {
+          label: "Ja",
+          onClick: () => handleStorageChange(true)
+        },
+        duration: 5000,
+      });
     }
   };
 

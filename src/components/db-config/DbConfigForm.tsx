@@ -18,8 +18,16 @@ export function DbConfigForm({ config, onChange }: DbConfigFormProps) {
       <Alert variant="default" className="bg-blue-50 border-blue-200">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-xs text-blue-700">
-          <strong>Empfohlene Konfiguration für Demo:</strong><br/>
+          <strong>Empfohlene Konfiguration:</strong><br/>
+          <span className="font-bold">Lokale Umgebung:</span><br/>
           Host: localhost<br/>
+          Port: 3306<br/>
+          Benutzername: meter_user<br/>
+          Passwort: meter_password<br/>
+          Datenbank: meter_db<br/><br/>
+          
+          <span className="font-bold">Docker-Umgebung:</span><br/>
+          Host: db<br/>
           Port: 3306<br/>
           Benutzername: meter_user<br/>
           Passwort: meter_password<br/>
@@ -36,7 +44,7 @@ export function DbConfigForm({ config, onChange }: DbConfigFormProps) {
           value={config.host}
           onChange={(e) => onChange('host', e.target.value)}
           className="col-span-3"
-          placeholder="localhost"
+          placeholder="localhost oder db (bei Docker)"
         />
       </div>
       

@@ -36,8 +36,14 @@ export function useDbConfig(onConfigChange: () => void) {
       setConnectionStatus("Verbunden mit Datenbank");
       return true;
     } else {
-      setConnectionStatus(null);
-      return false;
+      const connected = await databaseService.testConnection();
+      if (connected) {
+        setConnectionStatus("Verbunden mit Datenbank");
+        return true;
+      } else {
+        setConnectionStatus(null);
+        return false;
+      }
     }
   };
 
@@ -131,9 +137,11 @@ export function useDbConfig(onConfigChange: () => void) {
       }
     } catch (error) {
       // Unexpected error
+      const errorMsg = error instanceof Error ? error.message : "Unbekannter Fehler";
+      setConfigError(errorMsg);
       toast({
         title: "Fehler",
-        description: "Beim Speichern der Konfiguration ist ein Fehler aufgetreten.",
+        description: "Beim Speichern der Konfiguration ist ein Fehler aufgetreten: " + errorMsg,
         variant: "destructive",
         duration: 3000,
       });

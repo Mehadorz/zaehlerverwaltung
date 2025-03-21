@@ -21,6 +21,14 @@ class DatabaseService {
     
     // Try to load DB state immediately at startup
     this.loadDbStateFromPersistentStorage();
+    
+    console.log("DatabaseService initialisiert mit Konfiguration:", 
+      this.dbConfig ? {
+        host: this.dbConfig.host,
+        port: this.dbConfig.port,
+        database: this.dbConfig.database,
+        username: this.dbConfig.username
+      } : "Keine Konfiguration");
   }
 
   /**
@@ -39,7 +47,7 @@ class DatabaseService {
       this.connectionValidated = false;
     }
     
-    this.dbConfig = config;
+    this.dbConfig = { ...config };
     
     // Speichere Konfiguration im localStorage für die Persistenz
     localStorage.setItem('dbConfig', JSON.stringify(config));
@@ -175,7 +183,7 @@ class DatabaseService {
       // In einer echten Implementierung würden wir hier eine tatsächliche Verbindung testen
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Durchführen eines Pseudo-Verbindungstests
+      // Durchführen eines Verbindungstests
       const canConnect = await this.simulateDbConnection();
       
       // Setze die Verbindungsflags basierend auf dem Ergebnis
@@ -255,6 +263,27 @@ class DatabaseService {
     // Alle Verbindungen werden als erfolgreich angesehen, solange die Grundvalidierung besteht
     console.log('Verbindung zu Datenbank simuliert:', this.dbConfig.host);
     return true;
+  }
+
+  /**
+   * Führe ein simuliertes SQL-Statement aus und logge es
+   * @param sql SQL-Statement
+   * @param params Parameter für prepared statements
+   * @returns True bei Erfolg
+   */
+  private executeSQL(sql: string, params: any[] = []): boolean {
+    try {
+      // Format SQL und Parameter für Log
+      const formattedParams = params.map(p => 
+        typeof p === 'string' ? `'${p}'` : p
+      ).join(', ');
+      
+      console.log(`SQL [simuliert]: ${sql} ${params.length > 0 ? `[${formattedParams}]` : ''}`);
+      return true;
+    } catch (error) {
+      console.error('Fehler beim Ausführen von SQL:', error);
+      return false;
+    }
   }
 
   /**
@@ -358,7 +387,10 @@ class DatabaseService {
         console.log('Datenbank: Füge Zähler hinzu:', newMeter);
         
         // In einer realen Anwendung würden wir hier eine SQL-Anweisung ausführen
-        // z.B.: INSERT INTO meters (id, name, unit, is_active, notes) VALUES (...)
+        this.executeSQL(
+          'INSERT INTO meters (id, name, unit, is_active, notes) VALUES (?, ?, ?, ?, ?)',
+          [id, meter.name, meter.unit, meter.isActive ? 1 : 0, meter.notes || null]
+        );
         
         // Im simulierten Datenbankmodus verwenden wir den DB-Speicher
         if (!this.dbStorage.has('meters')) {
@@ -420,7 +452,10 @@ class DatabaseService {
         console.log('Datenbank: Aktualisiere Zähler:', meter);
         
         // In einer realen Anwendung würden wir hier eine SQL-Anweisung ausführen
-        // z.B.: UPDATE meters SET name = ?, unit = ?, ... WHERE id = ?
+        this.executeSQL(
+          'UPDATE meters SET name = ?, unit = ?, is_active = ?, notes = ? WHERE id = ?',
+          [meter.name, meter.unit, meter.isActive ? 1 : 0, meter.notes || null, meter.id]
+        );
         
         // Im simulierten Datenbankmodus verwenden wir den DB-Speicher
         const dbMeters = this.dbStorage.get('meters') || [];
@@ -559,6 +594,16 @@ class DatabaseService {
     try {
       this.lastError = null;
       
+      // Überprüfe Verbindungsstatus im Datenbankmodus
+      if (!this.useLocalStorage && !this.isConnected) {
+        console.log('Nicht mit Datenbank verbunden, versuche Verbindung herzustellen...');
+        const connected = await this.testConnection();
+        if (!connected) {
+          this.lastError = "Keine Datenbankverbindung: Zählerstand konnte nicht gespeichert werden";
+          return false;
+        }
+      }
+      
       if (this.useLocalStorage) {
         console.log('Lokaler Speicher: Aktualisiere Zählerstand:', meterId, date, value);
         
@@ -597,10 +642,28 @@ class DatabaseService {
       } else {
         console.log('Datenbank: Aktualisiere Zählerstand:', meterId, date, value);
         
-        // Im simulierten Datenbankmodus verwenden wir den DB-Speicher
+        // Prüfe, ob der Zählerstand bereits existiert
         const dbMeters = this.dbStorage.get('meters') || [];
+        const meter = dbMeters.find(m => m.id === meterId);
+        const existingReadingIndex = meter ? 
+          meter.readings.findIndex(r => r.date === date) : -1;
         
-        // Finde den Zähler
+        if (existingReadingIndex >= 0) {
+          // Aktualisiere den vorhandenen Zählerstand
+          this.executeSQL(
+            'UPDATE readings SET value = ? WHERE meter_id = ? AND reading_date = ?',
+            [value, meterId, date]
+          );
+        } else {
+          // Füge einen neuen Zählerstand hinzu
+          const readingId = crypto.randomUUID();
+          this.executeSQL(
+            'INSERT INTO readings (id, meter_id, reading_date, value) VALUES (?, ?, ?, ?)',
+            [readingId, meterId, date, value]
+          );
+        }
+        
+        // Im simulierten Datenbankmodus verwenden wir den DB-Speicher
         const updatedMeters = dbMeters.map(m => {
           if (m.id === meterId) {
             // Prüfe, ob der Zählerstand bereits existiert
@@ -792,3 +855,4 @@ class DatabaseService {
 
 export const databaseService = new DatabaseService();
 export type { DbConfig };
+
