@@ -29,6 +29,15 @@ export function useDbConfig(onConfigChange: () => void) {
     }
   };
 
+  // Load config on mount
+  useEffect(() => {
+    const savedConfig = databaseService.loadConfig();
+    if (savedConfig) {
+      setConfig(savedConfig);
+      checkConnectionStatus();
+    }
+  }, []);
+
   // Handle field changes
   const handleChange = (field: keyof DbConfig, value: string) => {
     setConfigError(null);
@@ -101,6 +110,7 @@ export function useDbConfig(onConfigChange: () => void) {
           description: "Die Datenbankverbindung wurde erfolgreich eingerichtet.",
           duration: 3000,
         });
+        onConfigChange(); // Notify parent component
         return true;
       } else {
         // Connection error
@@ -113,6 +123,7 @@ export function useDbConfig(onConfigChange: () => void) {
           variant: "destructive",
           duration: 5000,
         });
+        onConfigChange(); // Still call parent handler so it can update UI
         return false;
       }
     } catch (error) {
@@ -123,10 +134,10 @@ export function useDbConfig(onConfigChange: () => void) {
         variant: "destructive",
         duration: 3000,
       });
+      onConfigChange(); // Still notify parent
       return false;
     } finally {
       setIsSaving(false);
-      onConfigChange(); // Notify parent component
     }
   };
 

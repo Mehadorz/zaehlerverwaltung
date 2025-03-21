@@ -79,7 +79,17 @@ export function useMeterData() {
   useEffect(() => {
     const savedPreference = localStorage.getItem("storagePreference");
     if (savedPreference) {
-      setUseDatabase(JSON.parse(savedPreference));
+      const shouldUseDatabase = JSON.parse(savedPreference);
+      setUseDatabase(shouldUseDatabase);
+      
+      // Wenn Datenbank ausgewählt ist, versuche die Konfiguration zu laden
+      if (shouldUseDatabase) {
+        const config = databaseService.loadConfig();
+        if (config) {
+          databaseService.setConfig(config);
+          console.log("Gespeicherte Datenbankkonfiguration geladen");
+        }
+      }
     }
   }, []);
 
@@ -113,6 +123,17 @@ export function useMeterData() {
           variant: "destructive",
           duration: 5000,
         });
+        
+        // Fallback zu lokalem Speicher bei Datenbankfehlern
+        if (useDatabase) {
+          const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
+          setMeters(localMeters);
+          toast({
+            title: "Lokale Daten geladen",
+            description: "Nach einem Datenbankfehler wurden lokale Daten geladen.",
+            duration: 5000,
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -124,7 +145,7 @@ export function useMeterData() {
   // Effekt zum Speichern von Änderungen im lokalen Speicher
   useEffect(() => {
     // Nur speichern, wenn lokaler Speicher verwendet wird und nicht im Ladezustand
-    if (!useDatabase && !isLoading) {
+    if (!useDatabase && !isLoading && meters.length > 0) {
       console.log('Speichere Zähler im lokalen Speicher:', meters);
       localStorage.setItem("meters", JSON.stringify(meters));
     }

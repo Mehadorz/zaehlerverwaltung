@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +51,7 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
           
           // Check connection if database is selected
           if (shouldUseDatabase) {
+            console.log("Prüfe gespeicherte Datenbankverbindung...");
             const connected = await checkConnection();
             
             // Fall back to local storage if connection fails
@@ -64,6 +66,10 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
                 description: "Die gespeicherte Datenbankkonfiguration konnte nicht verbunden werden.",
                 duration: 3000,
               });
+            } else {
+              // Explicitly inform parent component about database usage
+              onStorageChange(true);
+              console.log("Datenbank erfolgreich verbunden. Daten werden in der Datenbank gespeichert.");
             }
           }
         }
@@ -101,8 +107,14 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
             variant: "destructive",
             duration: 5000,
           });
-        } else {
-          updateStorageStatus({ isConnected: connected });
+          
+          // Auto-switch to local storage
+          setUseDatabase(false);
+          localStorage.setItem("storagePreference", JSON.stringify(false));
+          onStorageChange(false);
+          setStorageMessage(false);
+        } else if (connected) {
+          updateStorageStatus({ isConnected: true });
         }
       }, 5000); // Check every 5 seconds
     }
@@ -110,7 +122,7 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     return () => {
       if (interval) window.clearInterval(interval);
     };
-  }, [useDatabase, storageStatus.isConnected, toast, updateStorageStatus]);
+  }, [useDatabase, storageStatus.isConnected, toast, updateStorageStatus, onStorageChange, setStorageMessage]);
 
   // Handle storage method change
   const handleStorageChange = async (checked: boolean) => {
@@ -184,6 +196,11 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
       } else {
         // If connection is successful
         setStorageMessage(true);
+        toast({
+          title: "Verbindung hergestellt",
+          description: "Verbindung zur Datenbank erfolgreich aktualisiert.",
+          duration: 3000,
+        });
       }
     }
   };
