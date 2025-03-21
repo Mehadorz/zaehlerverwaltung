@@ -60,10 +60,6 @@ export function DbConfigDialog({ onConfigChange }: DbConfigDialogProps) {
           <DialogTitle>Datenbank Konfiguration</DialogTitle>
           <DialogDescription>
             Bitte geben Sie die Verbindungsdaten für Ihre Datenbank ein.
-            <div className="mt-2 p-2 bg-amber-50 text-amber-800 text-xs rounded border border-amber-200">
-              <strong>Hinweis:</strong> Für diese Demo-Version werden nur bestimmte vordefinierte 
-              Verbindungskonfigurationen akzeptiert. Verwenden Sie die empfohlene Konfiguration unten.
-            </div>
           </DialogDescription>
         </DialogHeader>
         

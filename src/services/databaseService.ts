@@ -1,4 +1,3 @@
-
 import { DbConfig, Meter, Reading } from './types';
 import { loadLocalMeters, saveLocalMeters, generateMockMeters } from './storageHelpers';
 
@@ -253,73 +252,9 @@ class DatabaseService {
       return false;
     }
     
-    // Für die Demo-Anwendung definieren wir spezifische Verbindungsregeln
-    
-    // Demo-Modus: Wir akzeptieren bestimmte Kombinationen für erfolgreiche Verbindungen
-    const VALID_CREDENTIALS = [
-      // Format: [host, port, username, password, database]
-      ['localhost', 3306, 'meter_user', 'meter_password', 'meter_db'],
-      ['127.0.0.1', 3306, 'meter_user', 'meter_password', 'meter_db'],
-      ['db', 3306, 'admin', 'admin123', 'meter_db'],
-      ['mysql', 3306, 'root', 'root_password', 'meters'],
-      ['database', 3306, 'dba', 'dbpass', 'metrics']
-    ];
-
-    // Überprüfe, ob die eingegebenen Zugangsdaten mit einer der gültigen Kombinationen übereinstimmen
-    const matchingCreds = VALID_CREDENTIALS.find(creds => 
-      creds[0] === this.dbConfig!.host && 
-      creds[1] === this.dbConfig!.port &&
-      creds[2] === this.dbConfig!.username && 
-      creds[3] === this.dbConfig!.password && 
-      creds[4] === this.dbConfig!.database
-    );
-    
-    if (matchingCreds) {
-      console.log('Verbindung erfolgreich mit vordefinierten Zugangsdaten:', matchingCreds[0]);
-      return true;
-    }
-    
-    // Gebe spezifische Fehlermeldungen aus, je nachdem was nicht übereinstimmt
-    if (this.dbConfig.host === 'localhost' || this.dbConfig.host === '127.0.0.1') {
-      if (this.dbConfig.port !== 3306) {
-        this.lastError = `Verbindung zu ${this.dbConfig.host} fehlgeschlagen: Port 3306 wird erwartet`;
-        return false;
-      }
-      
-      if (this.dbConfig.username !== 'meter_user' || this.dbConfig.password !== 'meter_password') {
-        this.lastError = `Anmeldung an ${this.dbConfig.host} fehlgeschlagen: Falsche Anmeldedaten`;
-        return false;
-      }
-      
-      if (this.dbConfig.database !== 'meter_db') {
-        this.lastError = `Datenbank '${this.dbConfig.database}' nicht gefunden auf ${this.dbConfig.host}`;
-        return false;
-      }
-    }
-    
-    // Teste auf lokale IP-Adressen (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-    const ipPattern = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
-    const isIPAddress = ipPattern.test(this.dbConfig.host);
-    
-    if (isIPAddress) {
-      const ipParts = this.dbConfig.host.split('.');
-      const firstOctet = parseInt(ipParts[0]);
-      
-      const isLocalIP = firstOctet === 192 || firstOctet === 10 || 
-                        (firstOctet === 172 && parseInt(ipParts[1]) >= 16 && parseInt(ipParts[1]) <= 31);
-                        
-      if (isLocalIP) {
-        this.lastError = `Verbindung zu ${this.dbConfig.host} fehlgeschlagen: Keine Datenbank erreicht. Verwende für eine Demo 'localhost' mit den empfohlenen Zugangsdaten.`;
-        return false;
-      } else {
-        this.lastError = `Verbindung zu ${this.dbConfig.host} konnte nicht hergestellt werden (Zeitüberschreitung)`;
-        return false;
-      }
-    }
-    
-    // Für alle anderen Hosts
-    this.lastError = `Host ${this.dbConfig.host} ist nicht erreichbar oder ungültige Zugangsdaten`;
-    return false;
+    // Alle Verbindungen werden als erfolgreich angesehen, solange die Grundvalidierung besteht
+    console.log('Verbindung zu Datenbank simuliert:', this.dbConfig.host);
+    return true;
   }
 
   /**
