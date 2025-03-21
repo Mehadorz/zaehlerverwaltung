@@ -4,7 +4,7 @@ import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
 import { useConnectionChecker } from "./useConnectionChecker";
 import { useStorageStatus } from "./useStorageStatus";
-import { StorageStatus } from "./types";
+import type { StorageStatus } from "./types";
 
 export type { StorageStatus };
 
@@ -25,9 +25,11 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
 
   // Check database connection and handle results
   const checkConnection = useCallback(async () => {
+    console.log("Prüfe Datenbankverbindung (useStoragePreference)...");
     setCheckingConnection(true);
     try {
       const result = await checkDatabaseConnection();
+      console.log("Verbindungsergebnis:", result);
       return handleConnectionResult(result);
     } finally {
       setCheckingConnection(false);
@@ -37,12 +39,17 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
   // Load saved storage preference
   useEffect(() => {
     const init = async () => {
+      console.log("Initialisiere useStoragePreference...");
+      
       // Load saved storage setting
       const savedPreference = localStorage.getItem("storagePreference");
       if (savedPreference) {
         const shouldUseDatabase = JSON.parse(savedPreference);
         setUseDatabase(shouldUseDatabase);
         setStorageMessage(shouldUseDatabase);
+        
+        // Ensure explicit update to parent component
+        onStorageChange(shouldUseDatabase);
         
         // Load saved DB configuration if available
         const config = databaseService.loadConfig();
@@ -56,6 +63,7 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
             
             // Fall back to local storage if connection fails
             if (!connected) {
+              console.log("Fallback auf lokale Speicherung wegen Verbindungsfehler");
               setUseDatabase(false);
               localStorage.setItem("storagePreference", JSON.stringify(false));
               onStorageChange(false);
@@ -74,7 +82,9 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
           }
         }
       } else {
+        // If no preference set, default to local storage
         setStorageMessage(false);
+        onStorageChange(false);
       }
     };
     
@@ -86,11 +96,15 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     let interval: number | undefined;
     
     if (useDatabase) {
+      // Initial connection check
+      checkConnection();
+      
       // Set initial status
       updateStorageStatus({ isConnected: databaseService.isDbConnected() });
       
       // Check status regularly
-      interval = window.setInterval(() => {
+      interval = window.setInterval(async () => {
+        console.log("Periodische Verbindungsprüfung...");
         const connected = databaseService.isDbConnected();
         
         // Show a notification if connection is lost
@@ -115,6 +129,9 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
           setStorageMessage(false);
         } else if (connected) {
           updateStorageStatus({ isConnected: true });
+        } else if (!connected && !storageStatus.isConnected) {
+          // Try to reconnect
+          await checkConnection();
         }
       }, 5000); // Check every 5 seconds
     }
@@ -122,10 +139,12 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     return () => {
       if (interval) window.clearInterval(interval);
     };
-  }, [useDatabase, storageStatus.isConnected, toast, updateStorageStatus, onStorageChange, setStorageMessage]);
+  }, [useDatabase, storageStatus.isConnected, toast, updateStorageStatus, onStorageChange, setStorageMessage, checkConnection]);
 
   // Handle storage method change
   const handleStorageChange = async (checked: boolean) => {
+    console.log("Speichermethode wird gewechselt:", checked ? "Datenbank" : "Lokal");
+    
     if (checked) {
       // Update status and show UI feedback
       setCheckingConnection(true);
@@ -148,6 +167,7 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
         });
         setUseDatabase(false);
         setStorageMessage(false);
+        onStorageChange(false);
         return;
       }
       
@@ -176,6 +196,8 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
 
   // Handle configuration changes
   const handleConfigChange = async () => {
+    console.log("Datenbank-Konfiguration wurde geändert");
+    
     // Always check connection status after configuration changes
     if (useDatabase) {
       // Test connection with new settings
@@ -201,6 +223,7 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
           description: "Verbindung zur Datenbank erfolgreich aktualisiert.",
           duration: 3000,
         });
+        onStorageChange(true);
       }
     }
   };

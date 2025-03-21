@@ -18,8 +18,20 @@ export function useDbConfig(onConfigChange: () => void) {
   const [configError, setConfigError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
+  // Initialize with stored config on mount
+  useEffect(() => {
+    const storedConfig = databaseService.loadConfig();
+    if (storedConfig) {
+      console.log("Loading stored DB config in useDbConfig:", storedConfig);
+      setConfig(storedConfig);
+      // Check connection status on init
+      checkConnectionStatus();
+    }
+  }, []);
+
   // Check connection status when needed
   const checkConnectionStatus = async () => {
+    console.log("Checking connection status in useDbConfig");
     if (databaseService.isDbConnected()) {
       setConnectionStatus("Verbunden mit Datenbank");
       return true;
@@ -28,15 +40,6 @@ export function useDbConfig(onConfigChange: () => void) {
       return false;
     }
   };
-
-  // Load config on mount
-  useEffect(() => {
-    const savedConfig = databaseService.loadConfig();
-    if (savedConfig) {
-      setConfig(savedConfig);
-      checkConnectionStatus();
-    }
-  }, []);
 
   // Handle field changes
   const handleChange = (field: keyof DbConfig, value: string) => {

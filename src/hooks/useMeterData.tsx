@@ -77,70 +77,114 @@ export function useMeterData() {
 
   // Effekt zum Laden der gespeicherten Speicherpräferenz beim Start
   useEffect(() => {
-    const savedPreference = localStorage.getItem("storagePreference");
-    if (savedPreference) {
-      const shouldUseDatabase = JSON.parse(savedPreference);
-      setUseDatabase(shouldUseDatabase);
-      
-      // Wenn Datenbank ausgewählt ist, versuche die Konfiguration zu laden
-      if (shouldUseDatabase) {
-        const config = databaseService.loadConfig();
-        if (config) {
-          databaseService.setConfig(config);
-          console.log("Gespeicherte Datenbankkonfiguration geladen");
+    const init = async () => {
+      // Load saved storage preference
+      const savedPreference = localStorage.getItem("storagePreference");
+      if (savedPreference) {
+        const shouldUseDatabase = JSON.parse(savedPreference);
+        setUseDatabase(shouldUseDatabase);
+        
+        // Load saved DB configuration if database is selected
+        if (shouldUseDatabase) {
+          const config = databaseService.loadConfig();
+          if (config) {
+            databaseService.setConfig(config);
+            console.log("Gespeicherte Datenbankkonfiguration geladen");
+            
+            // Test connection to ensure it's working
+            const connected = await databaseService.testConnection();
+            if (!connected) {
+              console.warn("Gespeicherte Datenbankkonfiguration konnte nicht verbunden werden");
+              
+              // Fallback to local storage if connection fails
+              setUseDatabase(false);
+              localStorage.setItem("storagePreference", "false");
+              
+              toast({
+                title: "Datenbankverbindung fehlgeschlagen",
+                description: "Es wird auf lokale Speicherung zurückgegriffen.",
+                variant: "destructive",
+                duration: 5000,
+              });
+            }
+          }
         }
       }
-    }
+      
+      // Now load meters
+      loadMeters();
+    };
+    
+    init();
   }, []);
 
   // Effekt zum Laden der Zähler beim Start oder bei Änderung der Speichermethode
   useEffect(() => {
-    /**
-     * Lädt die Zähler aus der ausgewählten Speicherquelle
-     * Bei Fehlern wird eine Toast-Benachrichtigung angezeigt
-     */
-    const loadMeters = async () => {
-      setIsLoading(true);
-      try {
-        console.log(`Lade Zähler, verwende ${useDatabase ? 'Datenbank' : 'lokale Speicherung'}...`);
-        
-        if (useDatabase) {
+    loadMeters();
+  }, [useDatabase]);
+
+  /**
+   * Lädt die Zähler aus der ausgewählten Speicherquelle
+   * Bei Fehlern wird eine Toast-Benachrichtigung angezeigt
+   */
+  const loadMeters = async () => {
+    setIsLoading(true);
+    try {
+      console.log(`Lade Zähler, verwende ${useDatabase ? 'Datenbank' : 'lokale Speicherung'}...`);
+      
+      if (useDatabase) {
+        try {
+          // Ensure database connection is active
+          if (!databaseService.isDbConnected()) {
+            const connected = await databaseService.testConnection();
+            if (!connected) {
+              throw new Error("Datenbankverbindung konnte nicht hergestellt werden");
+            }
+          }
+          
           // Zähler aus der Datenbank laden
           const dbMeters = await databaseService.getAllMeters();
           console.log('Aus Datenbank geladene Zähler:', dbMeters);
           setMeters(dbMeters);
-        } else {
-          // Zähler aus dem lokalen Speicher laden
-          const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
-          console.log('Aus lokalem Speicher geladene Zähler:', localMeters);
-          setMeters(localMeters);
-        }
-      } catch (error) {
-        console.error('Fehler beim Laden der Zähler:', error);
-        toast({
-          title: "Fehler beim Laden",
-          description: "Die Zähler konnten nicht geladen werden.",
-          variant: "destructive",
-          duration: 5000,
-        });
-        
-        // Fallback zu lokalem Speicher bei Datenbankfehlern
-        if (useDatabase) {
+        } catch (error) {
+          console.error('Fehler beim Laden der Zähler aus Datenbank:', error);
+          
+          // Fallback to local storage on database errors
           const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
           setMeters(localMeters);
+          
+          // Switch storage mode to local
+          setUseDatabase(false);
+          localStorage.setItem("storagePreference", "false");
+          
           toast({
-            title: "Lokale Daten geladen",
-            description: "Nach einem Datenbankfehler wurden lokale Daten geladen.",
+            title: "Datenbankfehler",
+            description: "Fehler beim Zugriff auf die Datenbank. Verwende lokale Speicherung.",
+            variant: "destructive",
             duration: 5000,
           });
         }
-      } finally {
-        setIsLoading(false);
+      } else {
+        // Zähler aus dem lokalen Speicher laden
+        const localMeters = JSON.parse(localStorage.getItem("meters") || "[]");
+        console.log('Aus lokalem Speicher geladene Zähler:', localMeters);
+        setMeters(localMeters);
       }
-    };
-    
-    loadMeters();
-  }, [useDatabase, toast]);
+    } catch (error) {
+      console.error('Fehler beim Laden der Zähler:', error);
+      toast({
+        title: "Fehler beim Laden",
+        description: "Die Zähler konnten nicht geladen werden.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      
+      // Ensure we have some data to display
+      setMeters([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Effekt zum Speichern von Änderungen im lokalen Speicher
   useEffect(() => {
@@ -162,6 +206,7 @@ export function useMeterData() {
     setUseDatabase,
     setDateRange,
     setFilterStatus,
-    toast
+    toast,
+    loadMeters // Export loadMeters to allow manual refresh
   };
 }

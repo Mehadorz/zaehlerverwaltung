@@ -16,6 +16,14 @@ class DatabaseService {
   private connectionValidated = false; // Flag, ob die Verbindung bereits validiert wurde
   private dbStorage: Map<string, any> = new Map(); // Simulierte Datenbank-Speicherung
 
+  constructor() {
+    // Load config and initialize connection status
+    this.loadConfig();
+    
+    // Try to load DB state immediately at startup
+    this.loadDbStateFromPersistentStorage();
+  }
+
   /**
    * Setze Konfiguration für die Datenbankverbindung
    * @param config Datenbank-Konfiguration
@@ -53,8 +61,17 @@ class DatabaseService {
   loadConfig(): DbConfig | null {
     const saved = localStorage.getItem('dbConfig');
     if (saved) {
-      this.dbConfig = JSON.parse(saved);
-      return this.dbConfig;
+      try {
+        this.dbConfig = JSON.parse(saved);
+        console.log('Gespeicherte Datenbankkonfiguration geladen:', {
+          host: this.dbConfig.host,
+          port: this.dbConfig.port,
+          database: this.dbConfig.database
+        });
+        return this.dbConfig;
+      } catch (e) {
+        console.error('Fehler beim Laden der Datenbankkonfiguration:', e);
+      }
     }
     return null;
   }
