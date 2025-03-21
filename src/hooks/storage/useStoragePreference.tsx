@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
