@@ -6,6 +6,8 @@ import { useConnectionChecker } from "./useConnectionChecker";
 import { useStorageStatus } from "./useStorageStatus";
 import type { StorageStatus } from "./types";
 import type { ToastActionElement } from "@/components/ui/toast";
+import { ToastAction } from "@/components/ui/toast";
+import React from "react";
 
 export type { StorageStatus };
 
@@ -231,11 +233,15 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     } else if (connected) {
       // If connection test was successful but we're not using database,
       // ask user if they want to switch to database
-      const switchToDbToast = () => {
-        return {
-          label: "Ja",
-          onClick: () => handleStorageChange(true)
-        };
+      const switchToDbToast = (): ToastActionElement => {
+        return (
+          <ToastAction 
+            altText="Zu Datenbank wechseln"
+            onClick={() => handleStorageChange(true)}
+          >
+            Ja
+          </ToastAction>
+        );
       };
 
       toast({
