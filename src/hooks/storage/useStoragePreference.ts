@@ -1,10 +1,11 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { databaseService } from "@/services/databaseService";
 import { useToast } from "@/hooks/use-toast";
 import { useConnectionChecker } from "./useConnectionChecker";
 import { useStorageStatus } from "./useStorageStatus";
 import type { StorageStatus } from "./types";
-import { Button } from "@/components/ui/button";
+import type { ToastActionElement } from "@/components/ui/toast";
 
 export type { StorageStatus };
 
@@ -230,18 +231,17 @@ export function useStoragePreference(onStorageChange: (useDatabase: boolean) => 
     } else if (connected) {
       // If connection test was successful but we're not using database,
       // ask user if they want to switch to database
+      const switchToDbToast = () => {
+        return {
+          label: "Ja",
+          onClick: () => handleStorageChange(true)
+        };
+      };
+
       toast({
         title: "Datenbankverbindung verfügbar",
         description: "Möchten Sie zur Datenbankspeicherung wechseln?",
-        action: (
-          <Button 
-            onClick={() => handleStorageChange(true)}
-            size="sm"
-            variant="default"
-          >
-            Ja
-          </Button>
-        ),
+        action: switchToDbToast(),
         duration: 5000,
       });
     }
